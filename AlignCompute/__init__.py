@@ -1,3 +1,3 @@
 from .aligncompute import aligncompute
-from .meanac import meanac
+from .mean_aac import mean_aac
 from .gpc_aac import gpc_aac
