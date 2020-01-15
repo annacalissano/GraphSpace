@@ -15,14 +15,12 @@ import numpy as np
 import itertools
 import copy
 import math
-#from scipy.sparse.linalg import eigs
-#from scipy.sparse import *
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import scale
 import re
 import pandas as pd
 
-class pgaac_vector(aligncompute):
+class gpc_aac(aligncompute):
     
     def __init__(self,graphset,matcher,distance):
         aligncompute.__init__(self,graphset,matcher)
