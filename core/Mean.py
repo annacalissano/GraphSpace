@@ -8,24 +8,26 @@ import math
 # the mean class take as an imput a set of graphs and compute the frechet mean and the variance
 
 
-# Iterative Mean Algorithm
+# Reference:
 # Jain, Brijnesh, and Klaus Obermayer. "On the sample mean of graphs." 2008 IEEE International Joint Conference on Neural Networks (IEEE World Congress on Computational Intelligence). IEEE, 2008.
 
 class Mean:
     
+    # input:
+    # -Graphset: a set of graphs as a graphset object
+    # -Matcher: the type of alignment to use: either ID or GA
+    
     def __init__(self,GraphSet,Matcher):
-        self.m_matcher=Matcher
-        self.m_sample=GraphSet
-        self.m_C=None
-        self.m_dis=None
-        self.var=None
-        self.order=None
+        self.m_matcher=Matcher # the type of alignment to use
+        self.m_sample=GraphSet # the graphset
+        self.m_C=None # the Frechet Mean
+        self.m_dis=None # the distance of all the graphset wrt to the Frèchet Mean
+        self.var=None # the variance
+        self.order=None # order of shuffled data index
         
-        
-        
-    # compute the mean:
+    # Compute the mean:
     # select a random candidate 
-    # align all graph to this and compute a mean
+    # align all graph to the random cadidate and compute a mean
     def mean(self):
         if(isinstance(self.m_C, Graph)):
             return self.m_C
@@ -40,19 +42,17 @@ class Mean:
                 # the mean is compute thanks to the alignment function
                 for i in range(1,n):
                     i0=f[i]
-                    
+                    # aign the observation to the candidate mean
                     a=self.m_matcher.align(copy.deepcopy(self.m_sample.X[i0]),self.m_C)
-                    
+                    # go along the geodesic of a step 1/k
                     self.m_C=a.add(1.0/(i+1.0),i/(i+1.0))
-                    #print 'mean estimation:'
-                    #print self.m_C.x
                     del a
                 self.m_C.setClassLabel(0)
-                
                 return self.m_C
             else: return None
 
-    # compute the variance as the distance of all the graphs from the frechet mean 
+    # Compute the variance
+    # the variance is the distance of all the graphs from the Frechet mean 
     def variance(self):
         if(self.m_sample !=None and self.m_sample.size()!=0):
             if(self.var !=None):
