@@ -8,8 +8,8 @@ import math
 from sklearn.utils import resample
 
 
-# Mean Class
-# the mean class take as an imput a set of graphs and compute the frechet mean and the variance
+# MeanIterative Class: bootstrapped version of the Mean Class
+# the class take as an input a set of graphs and compute the frechet mean and the variance
 
 
 # Iterative Mean Algorithm
@@ -18,16 +18,16 @@ from sklearn.utils import resample
 class MeanIterative:
 
     def __init__(self, GraphSet, Matcher):
-        self.m_matcher = Matcher
-        self.m_sample = GraphSet
-        self.m_C = None
-        self.m_dis = None
-        self.var = None
+        self.m_matcher = Matcher # type of alignment
+        self.m_sample = GraphSet # graphset
+        self.m_C = None # Frèchet Mean
+        self.m_dis = None # distance between in graphset and the Frèchet Mean
+        self.var = None # Variance
 
     # compute the mean:
+    # Bootstrapped N data from the original dataset
     # select a random candidate
     # align all graph to this and compute a mean
-    # N number of resample
     def mean(self, N=None):
         if (isinstance(self.m_C, Graph)):
             return self.m_C
@@ -39,12 +39,12 @@ class MeanIterative:
                     f = resample(range(n), replace=True, n_samples=10 * n)
                 else:
                     f = resample(range(n), replace=True, n_samples=N)
-                    # Current loop Mean Candidate
+                # Current loop Mean Candidate
                 m_C_old = copy.deepcopy(self.m_sample.X[f[0]])
                 for i in range(1, len(f)):
                     # new observation (or resampled)
                     i0 = f[i]
-                    # computing the new mean
+                    # computing the current mean as in Mean object
                     a = self.m_matcher.align(copy.deepcopy(self.m_sample.X[i0]), m_C_old)
                     m_C_curr = a.add(1.0 / (i + 1.0), i / (i + 1.0))
                     # compute the distance from the previous step
@@ -87,7 +87,7 @@ def std(self):
     return math.sqrt(self.variance())
 
 
-# aligning all the graph to the Frechet mean and save them in a new set
+# aligning all the graph to the Frèchet mean and save them in a new set
 def align_G(self, *args):
     if (isinstance(args, Graph)):
         if (self.m_C == None):
