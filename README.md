@@ -27,6 +27,8 @@ AlignCompute:
 -gpca_aac: compute the Geodesic Pricipal Components with AAC and a given matcher [1]
 
 [1] Calissano, Anna, Feragen, Aasa and Vantini Simone "Graph Space: Geodesic Principal Components for aPopulation of Network-valued Data" MOX Report (2020)
+
 [2] Jain, Brijnesh J., and Klaus Obermayer. "Structure spaces." Journal of Machine Learning Research 10.Nov (2009): 2667-2714.
+
 [3] Gold, Steven, and Anand Rangarajan. "A graduated assignment algorithm for graph matching." IEEE Transactions on pattern analysis            and machine intelligence 18.4 (1996): 377-388.
 
