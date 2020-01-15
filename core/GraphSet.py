@@ -3,12 +3,20 @@ import pandas as pd
 from scipy.sparse import lil_matrix,vstack
 import copy
 from core import Graph
-# Create a list of Graph
 
-# Jain is creating a deep copy here two
-
-
+# GraphSet: object graphset, i.e. create a dataset of graphs
+# X: list of graphs
+# g_type: 'undirected' or 'direct'
+# node_attr: specify the node type attribute
+# edge_attr: specify the edge type attribute
 class GraphSet:
+    
+    # Initialize the Graphset
+    # Input:
+    # - graph_type: 'undirected' or 'direct' according to the type of graph.
+    # Note: type of graphs should be homogeneous within the Graphset
+    # Note: current package only work for scalar or vector nodes and edges attribute. 
+    # Stay tuned for updates!
     
     def __init__(self,graph_type=None):
         self.X = []
@@ -19,17 +27,19 @@ class GraphSet:
         self.y='label'
         self.node_attr='number'
         self.edge_attr='number'
-        # if(len(set_graphs)!=0):
-        #    self.X=[set_graphs[i] for i in range(len(set_graphs))]
 
     # Add a new Graph or initialize a new set
+    # input:
+    # -x: a Graph object
     def add(self,x):
         #if len(self.X)==0:
         #    self.X[0]=x
         #else:
         self.X.append(x)
     
-    # Select Subset
+    # Select Subset of graphs
+    # input:
+    # - index_set: a list of indexes (e.g. [2,3,7])
     def sublist(self,index_set):
         if(min(index_set)<0 or max(index_set)<=min(index_set) or len(self.X)<max(index_set)):
             print("Hi! Give me a correct interval so I can sublist your list.")
@@ -41,36 +51,29 @@ class GraphSet:
             return X_new
 
     # ClassLabel: get the class label of a graph
+    # input:
+    # -i: graph index
     def ClassLabel(self,i):
         if(i<0 or len(self.X)<=i):
             print("Hi! Give me a correct index of graph so I can tell you its label.")
         else:
             return self.X[i].ClassLabel()
-      
-    # ClassLabel: get the class label of a graph
-    def OutputLabel(self,i):
-        if(i<0 or len(self.X)<=i):
-            print("Hi! Give me a correct index of graph so I can tell you its label.")
-        else:
-            return self.X[i].OutputLabel()
         
     # Create a deep copy of the graphs set
     def cp(self):
         X=copy.deepcopy(self)
         return X
-    # Conversion function: in Jain Code there are two function: toArray and toString changing the format of the set
-    # I am not getting the meaning of it. Stay tuned, we will see.
-    
     
     # Size of the dataset
     def size(self):
         return len(self.X)
     
-    # Numero of nodes in the dataset
+    # Numbers of nodes in the dataset
+    # note that in framework [1] the graphs all have the same number of nodes theoretically. Read README.txt for references
     def nodes_networks(self):
         self.n_nodes=max([self.X[i].nodes() for i in range(self.size())])
         
-    # Gives back a set of graphs grown to be all of the same size       
+    # Gives back a set of graphs grown to be all of the same size (i.e. the size of the biggest graph)
     def grow_to_same_size(self):
         G2=self.cp()
         G2.nodes_networks()
@@ -79,19 +82,22 @@ class GraphSet:
                 G2.X[i].grow(G2.n_nodes)
         return G2
     
-    # Nodes Attributes:
+    # Nodes Attributes: return the maximum size of nodes attributes in all the graphs
     def get_node_attr(self):
         self.node_attr=max([self.X[i].node_attr for i in range(self.size())])
-    # Edge Attributes
+    # Edge Attributes: return the maximum size of edges attributes in all the graphs
     def get_edge_attr(self):
         self.edge_attr=max([self.X[i].edge_attr for i in range(self.size())])
     
+    # Scaling function: scale between 0 and 1 all the graphs attributes
     # Call the graph function feature scale for all the element in the graphset
     def feature_scale(self):
         for i in range(self.size()):
             self.X[i].feature_scale()
 
     # Write to text file a GraphSet
+    # input:
+    # - filename: the .txt filename to read
     def write_to_text(self,filename):
         fh = open(filename,"w")
         i=0
@@ -127,61 +133,10 @@ class GraphSet:
     
         fh.close()
     
-    # Read from file
+    # Read from text file a GraphSet (read the output of the write_to_text file)
+    # input:
+    # - filename: the .txt filename to read
     def read_from_text(self,filename):
-        fh = open(filename,"r")
-        # dimension of the graphset
-        n=int(fh.readline().split()[1])
-        i=1
-        e=enumerate(fh)
-        
-        #e.next()
-        # Parse all the graphs
-        while(n>0):
-            #g=fh.readline().split()
-            g=e.next()[1].split()
-            print(g)
-            dimG=int(g[2])
-            #print dimG
-            y=g[4]
-            #y=None
-            # Parse one graph
-            while(dimG>0):
-                dimAttr=int(e.next()[1].split()[2])
-                x={}
-                dimG-=1
-                # Parse the attribute list
-                while(dimAttr>0):
-                    l=e.next()[1].split()
-                    x[int(l[0]),int(l[1])]=map(lambda s: s if s.isalpha() else float(s), l[2:])
-                    dimAttr-=1
-                    dimG-=1
-                dimEdg=int(e.next()[1].split()[2])
-                adj={}
-                dimG-=1
-                # Parse the adj list
-                while(dimEdg>0):
-                    l=e.next()[1].split()
-                        #print l
-                    if(l[1:]>0):
-                        adj[int(l[0])]=map(int, l[1:])
-                    else:
-                        adj[int(l[0])]=[]  
-                    dimEdg-=1
-                    dimG-=1
-                if(y=='None'):
-                    self.add(Graph(x=x,adj=adj,y=None))
-                else:
-                    self.add(Graph(x=x,adj=adj,y=y))
-                del x
-                del adj
-                dimG-=1
-            
-            n-=1
-    
-    
-    # Read tgf files
-    def read_from_text2(self,filename):
         fh = open(filename,"r")
         for l in fh:
             n=0
@@ -258,6 +213,8 @@ class GraphSet:
     
     
     # Read tgf files
+    # input:
+    # -filename: the file.tgf to read from
     def read_from_tgf(self,filename):
         fh = open(filename,"r")
         for l in fh:
@@ -319,7 +276,12 @@ class GraphSet:
                                 continue
                     except:
                         continue
-
+    
+    # Building a dataframe from a graphset: every row is an observation (a graph) and every column is a variable (a node or an edge of
+    # the graph with the corresponding attributes)
+    # this function is very useful to perform standard euclidean statistics on labelled network population
+    # output:
+    # - M: a pandas dataframe with N x M N, number of graphs, M, number of nodes x node attributes x number of edges x edge attributes
     def to_matrix_with_attr(self):
         # Number of Graphs
         n=self.size()
@@ -343,7 +305,9 @@ class GraphSet:
             del col_i,col_i2,df_0
         M=D.fillna(0)
         return M
-
+    # drop a nodes in all graphs of the population
+    # input:
+    # - id: node index to drop
     def drop_nodes(self,id):
         G_drop=GraphSet()
         for n in range(self.size()):
