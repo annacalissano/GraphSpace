@@ -13,7 +13,7 @@ import numpy as np
 import copy
 
 
-class meanac(aligncompute):
+class mean_aac(aligncompute):
     
     def __init__(self,graphset,matcher):
         aligncompute.__init__(self,graphset,matcher)
