@@ -19,12 +19,11 @@ matcher:
 Child class gives back a reordered node sequence optimizing the matching criteria
     ID: identity match
     GA: graduate assignment match[2]
-        
 - alignment: class aligning two graphs with a specified matcher
 
 AlignCompute:
--meanac: compute the Frechet Mean with the AAC algorithm and a given matcher [1]
--gpca_aac: compute the Geodesic Pricipal Components with AAC and a given matcher [1]
+- meanac: compute the Frechet Mean with the AAC algorithm and a given matcher [1]
+- gpca_aac: compute the Geodesic Pricipal Components with AAC and a given matcher [1]
 
 [1] Calissano, Anna, Feragen, Aasa and Vantini Simone "Graph Space: Geodesic Principal Components for aPopulation of Network-valued Data" MOX Report (2020)
 
