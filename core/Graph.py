@@ -6,17 +6,23 @@ import sys
 import networkx as nx
 
 # Class Graph
-# to deal with sparse graph we decide to built a graph object made by dictionary
+# Create a graph element, which is the base element for the usage of this package
+# Graphs can be: undirect, direct, with scalar or vector euclidean attribute, with nodes or edges attributes of same or different dimension
+# A Graph object is made of:
 # - Adj: dictionary showing the structure (every node is a key, the values are the adjency nodes to the key)
 # - x: dictionary showing the attributes
 #   x[i,i]: nodes attributes
 #   x[i,j]: edge attributes 
-# Attributes can have a different lenght and different characteristics
+# - y: scalar or category attribute of the Graph (seful for classification or regression)
 
 class Graph:
     
     # Initializing the graph
+    # Input:
     # x: a dictionary with nodes attributes in [i,i] key and edge attributes in [j,i] position
+    # Facultative Input:
+    # adj: adjency list with [i] node as [k,l,m] the nodes is linked to as values (if None it is created in definethegraph())
+    # y: numeric or categorical variable associated to the 
     def __init__(self,x,adj,y):
         if(y is None):
             self.y=None
@@ -30,8 +36,7 @@ class Graph:
         self.n_edges=0;                # number of edges
         self.definethegraph()
         
-    # Building the adj and x function 
-    # x is a dictionary. The key are the corresponding edges (if [i,i] then is a node)
+    # Building the adj from x
     def definethegraph(self):      
         # Function to define the adjency List
         
@@ -104,14 +109,7 @@ class Graph:
                    
                 
     
-    
-    # Attributes matrix (pandas Dataframe)  
-    def attributes(self,attr):
-        self.attr=attr
-        
-    
-    # Overwrite the equal and the different between graphs
-    
+   
     # If we are intetrested in the attributes, uncomment what is after the 'and'
     def __eq__(self, other):
         # """Override the default Equals behavior"""
@@ -143,12 +141,12 @@ class Graph:
             return len(self.adj[i])
     
     # Degree of node (weighted)
-    def weighted_deg(self,i):
+    def weighted_degree(self,i):
         if(i<0 or self.n_nodes <= i or not i in self.adj):
             return 0;
         return sum(self.adj[i])
 
-    # Adjency matrix with attributes
+    # Adjency dictionary with attributes
     def matrix(self):
         return self.x
     
@@ -171,19 +169,20 @@ class Graph:
             print ("Missing value y.")
         else: return y   
     
+    # Check if it has a label
     def HasLabel(self):
         if(self.y is None):
             return False
         else: return True
         
-    # Attributes node vector
+    # Attributes node dimension
     def dimNodes(self):
         for i in range(self.n_nodes):
             if((i,i) in self.x and self.x[i,i]!=0):
                 return len(self.x[i,i])
         return 0
     
-    # Attributes edge vector
+    # Attributes edge dimension
     def dimEdges(self):
         for i in range(self.n_nodes):
             for j in range(self.n_nodes):
@@ -198,7 +197,7 @@ class Graph:
             if(k[0]==k[1]):
                 n_list.append(k)
         return n_list
-    # Return keys of nodes
+    # Return keys of edges
     def edges_list(self):
         e_list=[]
         for k,v in self.x.items():
@@ -206,16 +205,12 @@ class Graph:
                 e_list.append(k)
         return e_list
     
-    
-    # Get the adjency sparse matrix
-    # Note: if you want to consider weighted graph, you should substitute one with
-    # another value (the average of the edges attributes?)
+    # Get the adjency sparse matrix of 0 and 1
     def get_pure_matrix(self):
         _x=lil_matrix((self.n_nodes,self.n_nodes))
         for i in self.x.keys():
             _x[i]=1
         return _x
-    
     
     
     # Check if the graph is empty:
@@ -231,7 +226,7 @@ class Graph:
                 return True
     
     
-    # Scale function is scalling all the weights
+    # Scale: multuply all the weights (nodes and edges) with 'a'
     def scale(self,a):
         x_new={}
         for i in range(self.n_nodes):
@@ -242,14 +237,16 @@ class Graph:
                 x_new[i,j0]=list(np.multiply(a,self.x[i,j0]))
         return Graph(x=x_new,adj=self.adj,y=self.y)        
                 
-    # Permuting indexes
+    # Permuting indexes of the nodes
     def permutelist(self):
         f=np.random.permutation(self.nodes())
         return f
 
-    # Permuting function
+    # Permute function
     # This function is a key function when dealing with more than one network.
-    # it is permuting the node of the network
+    # it is permuting the node of the network and it is called in all the alignment process
+    # Input: 
+    # - f: list of index of nodes (e.g. of a permutation of 3 nodes network: f=[1,0,2])
     def permute(self,f):
         _x={}
         _adj={}
@@ -266,7 +263,6 @@ class Graph:
         self.adj=_adj
     
     # Scale the attributes of node and edges within a network
-    # Note: I suppose he attribute on the nodes has some meanings
     def feature_scale(self):
         # initialize both minimum and maximum for attributes
         x_M_nodes=[None]*self.node_attr
@@ -297,8 +293,9 @@ class Graph:
                     _x[i,j0]=np.divide(a,range_edges, out=np.zeros_like(a),where=range_edges!=0).tolist()
         self.x=_x
     
-    # Increasing graph size
-    # adding new empty nodes to the network
+    # Increasing graph size adding new empty nodes to the network
+    # input:
+    # - size: scalar value representing the new desired size
     def grow(self,size):
         if(size<=self.n_nodes):
             return self
@@ -328,7 +325,10 @@ class Graph:
                 #self.definethegraph()
             else: print("Hi Darling, attributes needed: use function grow_with_attributes instead!")
             
-    # Increasing graph size
+    # Increasing graph size adding new nodes to the network with the given attributes
+    # input:
+    # - size: scalar value representing the new desired size
+    # - new_attr: attribute to be added
     def grow_with_attributes(self,size,new_attr):
         if(size<=self.n_nodes):
             return self
@@ -346,8 +346,9 @@ class Graph:
             self.n_nodes=size
             self.attr=self.attr.append(new_attr)
  
-    # Decrising the graph size:
-    # Cutting off nodes
+    # Decrising the graph size
+    # input:
+    # - size: scalar value representing the new desired size
     def shrink(self,size):
         if(size<1 or self.n_nodes<=size):
             print("Invalid size")
@@ -363,6 +364,9 @@ class Graph:
                     self.attr=self.attr.loc[range(size),:]
                     
     # Extract the network corresponding to the j-th edge layer
+    # input:
+    # - j: the desired layer
+    # - node_too: if True extract also the layer from the node
     def extract_layer(self,j,node_too):
         # j is the j-th edges' attribute to built the network on
         _x=copy.deepcopy(self.x)
@@ -375,6 +379,9 @@ class Graph:
         return _x
     
     # Delete the attribute selected:
+    # input:
+    # - j: the attribute to delete
+    # - attr_type: either node or edge according to which 
     def del_attribute(self,j,attr_type):
         if(attr_type=='node'):
             if(self.dimNodes()<j):
@@ -387,11 +394,6 @@ class Graph:
                         
     # From Graph to vector scructure (1 if there is a link, 0 otherwise)
     # The vector is building unrolling the adj matrix by row
-    # The dimension of the vector is # edges + # nodes= N*(N-1)+N
-    def to_vector(self):
-        return
-    # From Graph to vector scructure (1 if there is a link, 0 otherwise)
-    # The vector is building unrolling the adj matrix by row
     # The dimension of the vector is #edges*n_attr_edges+#nodes*n_attr_nodes= N*(N-1)*#e_attr+N*n_attr
     def to_vector_with_attributes(self):
         n_a=self.node_attr
@@ -402,9 +404,10 @@ class Graph:
         return df_0
 
 
-    # To Networkx Object:
-    # layer: the layer to extract
-    # node_too: True if the layer should be extracted from the nodes, False otherwise
+    # To Networkx Object: this function convert the graph to a networkx object
+    # input:
+    # - layer: the layer to extract
+    # - node_too: True if the layer should be extracted from the nodes, False otherwise
     def to_networkX(self,layer,node_too):
         if(layer!=None):
             _x=self.extract_layer(layer,node_too)
@@ -419,7 +422,10 @@ class Graph:
             G.add_edges_from(list(self.x.keys()))
             nx.set_edge_attributes(G, self.x, 'weight')
         return G
+    
     # Drop a node or a set of nodes
+    # input:
+    # - id: the index of the node
     def drop_nodes(self,id):
         adj_new=copy.deepcopy(self.adj)
         x_new=copy.deepcopy(self.x)
@@ -434,10 +440,7 @@ class Graph:
                     print('Delete i:')
                     print(current_id)
                     for key in current_id: del x_new[key]
-                    #x_new = {key: x_new[key] for key in x_new if not (key in current_id)}
                     del adj_new[i],current_id
-                #adj_new = {key: [x for x in adj_new[key] if not (x in id)] for key in adj_new}
-
             else:
                 # all the edges entering in node i
                 current_id=[(i, j) for j in adj_new[i] if j in id]
