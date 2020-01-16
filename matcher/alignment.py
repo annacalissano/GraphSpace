@@ -3,23 +3,39 @@ from distance import euclidean
 import numpy as np
 import copy
 
+# Given the optimal permutation of nodes computed with the selected matcher
+# the alignment class is managing two graphs and their alignment according to the permutation
+
 class alignment:
     
     # We Align X to Y with f permutation of Y
+    # input:
+    # -X: graph to align
+    # -Y: graph (this one stay fix)
+    # -f: permutation of nodes (e.g. [2,0,1] for a three nodes network)
+    # - measure: the type of distance to use
+    
     def __init__(self,X,Y,f,measure):
-        self.X=X # to align original graph
+        self.X=X # original graph to be aligned
         self.Y=Y #target original graph
-        self.aY=copy.deepcopy(Y) #to aligned y # ATTENTION: it is creating a copy .cp() function of it
+        self.aY=copy.deepcopy(Y) #to aligned y
         self.aY=self.aY.grow(self.X.nodes()) #aligned y
         self.aX=None # to aligned y
         self.f=f # permuting vector
         self.measure=measure # the distance between networks
-        #print('Buddy remember we are aligning to Y, so f should be a permutation of Y (i.e. the biggest matrix)')
 
     
     
-    # Add at y a linear combination of x y=ax*y + ay*x
-    def summ(self,ax,x,ay,y): #ax,ay are scalar, x,y are vectors
+    # add function:
+    # performing a linear combination of two vectors with given weights
+    # input:
+    # - ax: scalar coefficient of x
+    # - x: vector [list type]
+    # - ay: scalar coefficient of y
+    # - y: vector [list type]
+    # Output:
+    # - res: scalar representing the result of the addition
+    def summ(self,ax,x,ay,y):
         if(x is None and y is None):
             return None
         else:
@@ -35,19 +51,21 @@ class alignment:
                     res+=[ax*x[i]+ay*y[i]] 
                 return res
     
-    # aligning: expand and permute
+    # Aligning function:
+    # Aligning X to Y using f permutation
     def alignedSource(self):
         if(self.aX is None):
             self.aX=copy.deepcopy(self.X)
             self.aX.grow(self.Y.nodes())
             self.aX.permute(self.f)
-        #return self.aX
     
     # Define or return the alignment source
     def alignedTarget(self):
         return self.aY
     
-    # Compute the distance:
+    # Compute the distance between the two aligned graphs
+    # Output:
+    # - dis: scalar representing the distance
     def dis(self):
         self.alignedSource()
         nX=self.aX.nodes()
@@ -58,15 +76,12 @@ class alignment:
         adjX=self.aX.adj
         adjY=self.aY.adj
         for i in range(nX):
-            
-            
             if((i,i) in x and (i,i) in y):
                 dis+=self.measure.node_dis(x[i,i],y[i,i])
             elif((i,i) in x and not (i,i) in y):
                 dis+=self.measure.node_dis(x[i,i],[0])
             elif((not (i,i) in x) and (i,i) in y):
                 dis+=self.measure.node_dis([0],y[i,i])
-
             linked_nodes=[]
             if(i in adjX and i in adjY):
                 linked_nodes=set(adjX[i]).union(set(adjY[i]))
@@ -75,7 +90,6 @@ class alignment:
                     linked_nodes=set(adjX[i])
                 if(i in adjY and not i in adjX):
                     linked_nodes=set(adjY[i])
-                    
             for j in linked_nodes:
                 # Both edges don't exist in both networks (impossible)
                 if((not (i,j) in y) and (not (i,j) in x)):
@@ -89,12 +103,11 @@ class alignment:
                     dis+=self.measure.edge_dis([0],y[i,j])
         return dis
           
-    # Sim function for the networks
+    # Compute the similarity between the two aligned graphs
+    # Output:
+    # - sim: scalar representing the similarity
     def sim(self):
         nX=self.X.nodes()
-        # the two adjency matrix
-        #self.alignedSource()
-        # sure? ay and X?
         x=self.X.matrix()
         y=self.aY.matrix()
         adjX=self.X.adjList()
@@ -111,33 +124,35 @@ class alignment:
        
     
     
-    # add function:
+    # add function: this is a very important function used to compute the geodesic between
+    # the two aligned graphs and proceeding ax and ay along the geodesic
+    # it is an addition extended to the concept of aligned graphs
+    # input:
+    # - ax: scalar weight of network X
+    # - ay: scalar weight of network Y
+    # Output:
+    # - newG: the sum graph
     def add(self,ax,ay):
         self.alignedSource()
+        # Trasforming in two matrix
         x=self.aX.matrix()
         y=self.aY.matrix()
-        #print 'sum:'
-        #print ax
-        #print x
-        #print ay
-        #print y
-        # Links
         adjX=self.aX.adj
         adjY=self.aY.adj
         # Nodes
         nX=self.aX.n_nodes
         new={}
+        # new set of nodes
         fullset=set(x.keys()).union(set(y.keys()))
         for i in range(nX):
-            
-            
+            # node in both networks
             if((i,i) in x and (i,i) in y):
                 new[i,i]=self.summ(ax,x[i,i],ay,y[i,i])
+            # node in one of the two
             elif((i,i) in x and not (i,i) in y):
                 new[i,i]=self.summ(ax,x[i,i],ay,None)
             elif((not (i,i) in x) and (i,i) in y):
                 new[i,i]=self.summ(ax,None,ay,y[i,i])
-
             linked_nodes=[]
             if(i in adjX and i in adjY):
                 linked_nodes=set(adjX[i]).union(set(adjY[i]))
@@ -148,12 +163,13 @@ class alignment:
                     linked_nodes=set(adjY[i])
                     
             for j in linked_nodes:
-                # Both edges don't exist in both networks (impossible)
+                # edge doesn't exist in both networks (impossible)
                 if((not (i,j) in y) and (not (i,j) in x)):
                        continue
-                # Both edges exist in both networks
+                # edge exists in both networks
                 elif((i,j) in y and (i,j) in x):
                     new[i,j]=self.summ(ax,x[i,j],ay,y[i,j])
+                # edge exists in one of the two
                 elif(not (i,j) in y):
                     new[i,j]=self.summ(ax,x[i,j],ay,None)
                 elif(not (i,j) in x):
