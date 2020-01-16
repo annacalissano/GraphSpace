@@ -10,23 +10,19 @@ import math
 # The method match is implemented in child class such as BK,GA,ID
 
 class Matcher(object):
-    #__metaclass__ = ABCMeta
     
     def __init__(self,X=None,Y=None,f=None):
         self.measure=euclidean()
         self.X=None
         self.Y=None
         self.f=None
-        #pass
 
-    #Core method of the Matcher: initialize the best matching permutation of nodes between X and Y
+    # Core method of the Matcher: initialize the best matching permutation of nodes between X and Y
     def match(self,X,Y):
         pass
     
-    
+    # Grows both network to have the same size
     def the_grow_and_set(self,X,Y):
-        #self.X=X
-        #self.Y=Y
         nX=X.nodes()
         nY=Y.nodes()
         n=max(nX,nY)
@@ -44,10 +40,8 @@ class Matcher(object):
     
     
     # Clone the matcher
-    
     def clone(self):
         M=copy.deepcopy(self)
-        #M=super().clone(self)
         M.measure=self.measure
         M.X=None
         M.Y=None
@@ -64,8 +58,11 @@ class Matcher(object):
 
 
     
-    # Computing sim between two graph
-    # see node_sim and edge_sim in measure for details
+    # Computing similarity between two graph
+    # the_sim is the father function calling node_sim and edge_sim
+    # GraphSpace framework allows for different type of attributes on nodes and edges,
+    # so two different sim are implemented
+    # see measure.node_sim and measure.edge_sim in measure for details
     def the_sim(self,X,Y):
         self.the_grow_and_set(X,Y)
         aX=copy.deepcopy(self.X)
@@ -87,7 +84,11 @@ class Matcher(object):
                         sim+=self.measure.edge_sim(x[i,j0],y[fi,self.f[j0]])
         return sim
     
-    # Computing the distance between the two matched graph
+    # Computing distance between two graph
+    # the_sim is the father function calling node_dis and edge_dis
+    # GraphSpace framework allows for different type of attributes on nodes and edges,
+    # so two different sim are implemented
+    # see node_dis and edge_dis in measure for details
     def the_dis(self,X,Y):
         # match gives back the best combination of nodes
         self.the_grow_and_set(X,Y)
