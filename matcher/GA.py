@@ -28,19 +28,6 @@ class GA(Matcher):
     opt_eps1 = 0.05;
     # **********************
 
-    #// continuation parameter
-    #private double b;
-
-    
-    #// match matrix
-    #private double[][] M;
-
-    #// association graph
-    #private double[][][][] A;
-    #private double[][] a;
-
-    #// flag, indicating whether argument has been swapped for better performance
-    #private boolean swapped;
 
     def __init__(self,X=None,Y=None,f=None):
         Matcher.__init__(self,X,Y,f)
@@ -76,7 +63,6 @@ class GA(Matcher):
         # Partial derivative matrix taylor expansion
         Q=lil_matrix((nX, nY))
         
-        # QUI!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # M0 exp equation
         M0=lil_matrix((nX+ 1, nY+ 1))
         #M0=lil_matrix((nX, nY))
@@ -91,11 +77,8 @@ class GA(Matcher):
             # B loop
             for  t0 in range(opt_I0):
                 # copy
-                # QUI !!!!!!!!!!!!!!!!!!!!!!!!!!!
                 for i in range(nX+1):
-                #for i in range(nX):
-                    M0[i,]=self.M[i,0:nY+1] #System.arraycopy(M[i], 0, M0[i], 0, nY + 1);
-                    #M0[i,]=self.M[i,0:nY]
+                    M0[i,]=self.M[i,0:nY+1]
 
                 # softmax
                 for i in range(nX):
@@ -111,33 +94,22 @@ class GA(Matcher):
                         self.M[i,j]=math.exp(self.b*Q[i,j])
                 ## C loop
                 for t1 in range(opt_I1):
-                    
-                    # QUI !!!!!!!!!!!!!!!!!!!!!
-                    #for i in range(nX):
                     for i in range(nX+1):
                         # copy
                         M1[i,]=self.M[i,0:nY+1]
-                        #M1[i,]=self.M[i,0:nY]
                     # normalize across all rows
                     for i in range(nX+1):
-                    #for i in range(nX):
                         row_sum=0
                         for j in range(nY+1):
-                            #for j in range(nY):
                             row_sum+=self.M[i,j]
                         for j in range(nY+1):
-                            #for j in range(nY):
                             self.M[i,j]/=row_sum
                     # normalize across all columns
                     for j in range(nY+1):
-                        #for j in range(nY):
                         col_sum=0
-                        
                         for i in range(nX+1):
-                            #for i in range(nX):
                             col_sum+=self.M[i,j]
                         for i in range(nX+1):
-                            #for i in range(nX):
                             self.M[i,j]/=col_sum
                    
                     # check for convergence
@@ -198,7 +170,7 @@ class GA(Matcher):
                     for l in range(degY):
                         self.A[i,j][k,l]=self.A[i,j][k,l]/scale
 
-    # computing the matching with the hungarian algorithm                    
+    # computing the matching with the hungarian algorithm in the Munkres function                    
     def cleanup(self):
         nX=self.X.nodes()
         nY=self.Y.nodes()
@@ -206,13 +178,10 @@ class GA(Matcher):
         for i in range(nX):
             for j in range(nY):
                 C[i,j]=1.0-self.M[i,j]
-        #C=1.0-self.M
-        #C_reduce = lil_matrix(sparse.csr_matrix(C)[0:nX,0:nX]).todense()
         m=Munkres()
         indexmatch=m.compute(C)
         self.f=[indexmatch[i][1] for i in range(len(indexmatch))]
         self.f=self.f[0:nX]
-        #f=Munkres.computeAssignments(C,10E6)
         if(self.swapped):
             g=[]
             for i in range(nY):
