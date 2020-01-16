@@ -9,7 +9,8 @@ from matcher import Matcher
 # author: brijneshjain
 
 # ID is a child of matcher
-# ID algorithm is used to compute the match between two network (i.e. the network itself)
+# ID algorithm is used to compute the identity match between two network (i.e. the network itself)
+# ID matchining can be used for labelled framework
 class ID(Matcher):
     
     def match(self,X,Y):
