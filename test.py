@@ -68,7 +68,7 @@ G.add(Graph(x=x3, y=None, adj=None))
 
 # or import a GraphSet
 X = GraphSet()
-X.read_from_text("Simulation_Data.txt")
+X.read_from_text("Dataset.txt")
 
 # Matching Function - GA or ID:
 match = GA()
