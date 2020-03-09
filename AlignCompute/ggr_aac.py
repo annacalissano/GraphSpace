@@ -18,7 +18,7 @@ import pandas as pd
 from sklearn import linear_model
 import random
 
-class regressionac_vector(aligncompute):
+class ggr_aac(aligncompute):
     
     def __init__(self,graphset,matcher,distance):
         aligncompute.__init__(self,graphset,matcher)

@@ -97,3 +97,25 @@ print(MU.x)
 n_comp=2
 p=gpc_aac(G,GA(),euclidean())
 p.align_and_est(n_comp,scale=False,s=[0,10])
+
+# Align All and Compute GGR regression scalar on graph
+G=GraphSet()
+G.read_from_text("ErdosReny_100.txt")
+# Training and Test set
+n_train=10
+X_train=G.sublist(list(range(0,n_train)))
+
+# Run GGR:
+r=ggr_aac(X_train,GA(),euclidean())
+r.align_and_est()
+
+# Proportion of variance explained
+r.R2
+
+# Network Coefficient
+print(r.network_coef.x)
+
+# Prediction:
+Y_test=G.X[1]
+x_new=pd.DataFrame(data=[float(Y_test.y)])
+r.predict(x_new)
