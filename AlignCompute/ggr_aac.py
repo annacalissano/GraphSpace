@@ -4,8 +4,8 @@
 # Step2: Align X2,...,Xn wrt m (save the permutation vector)
 # Step3: Compute the generalized geodesic regression (ggr) on the total space of aligned graphs
 # Step4: save the coefficient of the regression
-# Step5: compute the R2 as a measurment of the ggr quality
-# repreat step2-4 until the R2 is not changing
+# Step5: compute the sum_residuals as a measurment of the ggr quality
+# repreat step2-4 until the sum_residuals is not changing
 
 from core import Graph
 from core import GraphSet
@@ -29,7 +29,7 @@ class ggr_aac(aligncompute):
         a=graphset.to_matrix_with_attr()
         self.s_min=np.min(a.min())
         self.s_max = np.max(a.max())
-        #self.step=[]
+        self.step=[]
         #self.step_coef=GraphSet()
     def align_and_est(self):
         # k=100 maximum number of iteration
@@ -51,20 +51,20 @@ class ggr_aac(aligncompute):
                 #return E1
             
             # STEP 1: Align all the data wrt the Generalized Geodesic Regression line
-            self.align_geo(E_1[0])
+            self.align_pred(E_1[1])
             # STEP 2: new iteration
             if(k>0):
                 E_2=self.est()
             # STEP 3: the algorithmic step is computed as the square difference between the coefficients
-            step_range = abs(E_1[2]-E_2[2])
-            #self.step+=[step_range]
+            step_range = abs(sum(E_1[0]._residues)-sum(E_2[0]._residues))
+            self.step+=[step_range]
             #self.step_coef.add(self.give_me_a_network(E_2[0],self.aX.node_attr,self.aX.edge_attr))
             if(step_range<0.005):
                 # IF small enough, I am converging! Save and exit.
-                self.vector_coef=E_2[0]
-                self.network_coef=self.give_me_a_network(E_2[0],self.aX.node_attr,self.aX.edge_attr)
-                self.model=E_2[1]
-                self.R2=E_2[2]
+                self.vector_coef=pd.Series(data=E_2[0].coef_.flatten(),index=self.variables_names)
+                self.network_coef=self.give_me_a_network(self.vector_coef,self.aX.node_attr,self.aX.edge_attr)
+                self.model=E_2[0]
+                self.sum_residuals=sum(E_2[0]._residues)
                 print("Step Range smaller than 0.005")
                 return
             else:
@@ -75,47 +75,33 @@ class ggr_aac(aligncompute):
         print("Maximum number of iteration reached.")  
         # Return the result
         if('E_2' in locals()):
-            self.vector_coef = E_2[0]
-            self.network_coef = self.give_me_a_network(E_2[0], self.aX.node_attr, self.aX.edge_attr)
-            self.model = E_2[1]
-            self.R2 = E_2[2]
+            self.vector_coef = pd.Series(data=E_2[0].coef_.flatten(), index=self.variables_names)
+            self.network_coef = self.give_me_a_network(self.vector_coef, self.aX.node_attr, self.aX.edge_attr)
+            self.model = E_2[0]
+            self.sum_residuals = sum(E_2[0]._residues)
             del E_2,E_1
         else:
-            self.vector_coef = E_1[0]
-            self.network_coef = self.give_me_a_network(E_1[0], self.aX.node_attr, self.aX.edge_attr)
-            self.model = E_1[1]
-            self.R2 = E_1[2]
+            self.vector_coef = pd.Series(data=E_1[0].coef_.flatten(), index=self.variables_names)
+            self.network_coef = self.give_me_a_network(self.vector_coef, self.aX.node_attr, self.aX.edge_attr)
+            self.model = E_1[0]
+            self.sum_residuals = sum(E_1[0]._residues)
             del E_1
         
         
     # Align wrt a geodesic
-    def align_geo(self,geo):
+    def align_pred(self,y_pred):
         self.f.clear()
-        # the alignment wrt a geodesic gamma(t) work in two step:
-        # In this application, the geodesic gamma is expressed as a network geodesic so I need 
-        # to transform the vector into a network
+        # the alignment wrt a geodesic aiming at predicting data is an alignment wrt the prediction along
+        # the regression gamma(x_i) and the data point itself y_i
+        # i.e. find the optimal candidate y* in [y] st d(gamma(x)-y) is minimum
         self.aX.get_node_attr()
         self.aX.get_edge_attr()
-        geo_net=self.give_me_a_network(geo,n_a=self.aX.node_attr,e_a=self.aX.edge_attr)
-        barycenter_net=self.give_me_a_network(self.barycenter,n_a=self.aX.node_attr,e_a=self.aX.edge_attr)
-        # step 1: every graph for every tilde_t in -T,T
-        # Save the alignment for every i for every t_tilde in a dictionary
+        # for every graph save the new alignment
         for i in range(self.aX.size()):
-            ind=0
-            f_i_t={}
-            d_i_t=[]
-            for tilde_t in np.linspace(self.s_min,self.s_max,10):
-                # The geodesic regression line pass through the mean of the aligned data
-                G_tilde=self.add(1, barycenter_net, tilde_t, geo_net, range(barycenter_net.nodes()))
-                a = self.matcher.align(self.aX.X[i], G_tilde)
-                d_i_t += [a.dis()]
-                f_i_t[ind] = a.f
-                ind += 1
-                del a,G_tilde
-            # step 2: find the best t_tilde for every i that minimize the distance
-            t=np.argmin(d_i_t)
-            self.f[i]=f_i_t[t]
-            del ind,d_i_t,f_i_t
+            # transform the estimation into a network to compute the networks distances
+            y_pred_net= self.give_me_a_network(y_pred.iloc[i], self.aX.node_attr, self.aX.edge_attr)
+            a = self.matcher.align(self.aX.X[i], y_pred_net)
+            self.f[i] = a.f
 
     # Compute the generalized geodesic regression on the total space as a regression of the aligned graph set
     def est(self):
@@ -131,20 +117,20 @@ class ggr_aac(aligncompute):
             del(G_temp)
         # Transform it into a matrix
         y = G_per.to_matrix_with_attr()
+        # parameter saved:
         self.barycenter=np.mean(y)
-        
+        self.variables_names=y.columns
         # Create the input value
         t = []
         for i in range(y.shape[0]):
             t += [float(G_per.X[i].y)]
         x = pd.DataFrame(data=t, index=y.index)
-        
         # Create linear regression object
         regr = linear_model.LinearRegression()
         regr.fit(x, y)
-        c = pd.Series(data=regr.coef_.flatten(),index=y.columns)
-        # return: the coefficients, the regression object, and the R2
-        return (c,regr,regr.score(x,y))
+        along_geo_pred = p=pd.DataFrame(regr.predict(x),columns=self.variables_names)
+        # return: the regression object
+        return (regr,along_geo_pred)
 
     # Given x_new is predicting the corresponding graph:
     def predict(self,x_new):
