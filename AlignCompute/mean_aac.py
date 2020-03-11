@@ -154,7 +154,7 @@ class mean_aac(aligncompute):
                         G.permute(self.f[i])
                         align_X.add(G)
                         del(G)
-                        self.m_dis=self.matcher.dis(align_X,self.mean)
+                    self.m_dis=self.matcher.dis(align_X,self.mean)
                 self.var=0.0
                 for i in range(n):
                     self.var+=self.m_dis[i]

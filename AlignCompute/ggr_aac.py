@@ -30,10 +30,11 @@ class ggr_aac(aligncompute):
         self.s_min=np.min(a.min())
         self.s_max = np.max(a.max())
         self.step=[]
-        #self.step_coef=GraphSet()
+        self.step_coef=GraphSet()
+        self.error=[]
     def align_and_est(self):
         # k=100 maximum number of iteration
-        for k in range(100):
+        for k in range(200):
             # STEP 0: Align wrt a random value
             if(k==0):
                 j = random.choice(range(0, self.aX.size()))
@@ -57,32 +58,50 @@ class ggr_aac(aligncompute):
                 E_2=self.est()
             # STEP 3: the algorithmic step is computed as the square difference between the coefficients
             step_range = abs(sum(E_1[0]._residues)-sum(E_2[0]._residues))
+            self.error+=[sum(E_2[0]._residues)]
             self.step+=[step_range]
-            #self.step_coef.add(self.give_me_a_network(E_2[0],self.aX.node_attr,self.aX.edge_attr))
-            if(step_range<0.005):
-                # IF small enough, I am converging! Save and exit.
-                self.vector_coef=pd.Series(data=E_2[0].coef_.flatten(),index=self.variables_names)
-                self.network_coef=self.give_me_a_network(self.vector_coef,self.aX.node_attr,self.aX.edge_attr)
-                self.model=E_2[0]
-                self.sum_residuals=sum(E_2[0]._residues)
-                print("Step Range smaller than 0.005")
-                return
-            else:
+            self.step_coef.add(self.give_me_a_network(pd.Series(data=E_2[0].coef_.flatten(),index=self.variables_names),self.aX.node_attr,self.aX.edge_attr))
+            #if(step_range<0.005):
+                #IF small enough, I am converging! Save and exit.
+                #self.network_coef = GraphSet()
+                #self.vector_coef = pd.Series(data=E_2[0].coef_.flatten(), index=self.variables_names)
+                #self.network_coef.add(
+                #self.give_me_a_network(pd.Series(data=E_2[0].intercept_.flatten(), index=self.variables_names),
+                #                      self.aX.node_attr, self.aX.edge_attr, y='Intercept'))
+                # for i_th in range(E_2[0].coef_.shape[1]):
+                    #self.network_coef.add(
+                    #    self.give_me_a_network(pd.Series(data=E_2[0].coef_[:, i_th], index=self.variables_names),
+                    #                       self.aX.node_attr, self.aX.edge_attr, y=str('beta' + str(i_th))))
+                #self.model = E_2[0]
+                #self.sum_residuals = sum(E_2[0]._residues)
+                #    print("Step Range smaller than 0.005")
+                #    return
+            #else:
                 # Go on with the computation: update the new result and restart from step 1.
-                del E_1
-                E_1=E_2
-                del E_2
+            del E_1
+            E_1=E_2
+            del E_2
         print("Maximum number of iteration reached.")  
         # Return the result
         if('E_2' in locals()):
-            self.vector_coef = pd.Series(data=E_2[0].coef_.flatten(), index=self.variables_names)
-            self.network_coef = self.give_me_a_network(self.vector_coef, self.aX.node_attr, self.aX.edge_attr)
+            self.network_coef =GraphSet()
+            #self.vector_coef = pd.Series(data=E_2[0].coef_.flatten(), index=self.variables_names)
+            self.network_coef.add(self.give_me_a_network(pd.Series(data=E_2[0].intercept_.flatten(), index=self.variables_names), self.aX.node_attr, self.aX.edge_attr,y='Intercept'))
+            for i_th in range(E_2[0].coef_.shape[1]):
+                self.network_coef.add(
+                    self.give_me_a_network(pd.Series(data=E_2[0].coef_[:,i_th], index=self.variables_names),
+                                           self.aX.node_attr, self.aX.edge_attr, y=str('beta'+str(i_th))))
             self.model = E_2[0]
             self.sum_residuals = sum(E_2[0]._residues)
             del E_2,E_1
         else:
-            self.vector_coef = pd.Series(data=E_1[0].coef_.flatten(), index=self.variables_names)
-            self.network_coef = self.give_me_a_network(self.vector_coef, self.aX.node_attr, self.aX.edge_attr)
+            self.network_coef =GraphSet()
+            #self.vector_coef = pd.Series(data=E_2[0].coef_.flatten(), index=self.variables_names)
+            self.network_coef.add(self.give_me_a_network(pd.Series(data=E_1[0].intercept_.flatten(), index=self.variables_names), self.aX.node_attr, self.aX.edge_attr,y='Intercept'))
+            for i_th in range(E_1[0].coef_.shape[1]):
+                self.network_coef.add(
+                    self.give_me_a_network(pd.Series(data=E_1[0].coef_[:,i_th], index=self.variables_names),
+                                           self.aX.node_attr, self.aX.edge_attr, y=str('beta'+str(i_th))))
             self.model = E_1[0]
             self.sum_residuals = sum(E_1[0]._residues)
             del E_1
@@ -102,6 +121,7 @@ class ggr_aac(aligncompute):
             y_pred_net= self.give_me_a_network(y_pred.iloc[i], self.aX.node_attr, self.aX.edge_attr)
             a = self.matcher.align(self.aX.X[i], y_pred_net)
             self.f[i] = a.f
+            del(y_pred_net)
 
     # Compute the generalized geodesic regression on the total space as a regression of the aligned graph set
     def est(self):
@@ -128,7 +148,7 @@ class ggr_aac(aligncompute):
         # Create linear regression object
         regr = linear_model.LinearRegression()
         regr.fit(x, y)
-        along_geo_pred = p=pd.DataFrame(regr.predict(x),columns=self.variables_names)
+        along_geo_pred = pd.DataFrame(regr.predict(x),columns=self.variables_names)
         # return: the regression object
         return (regr,along_geo_pred)
 
