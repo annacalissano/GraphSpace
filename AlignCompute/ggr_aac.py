@@ -40,6 +40,7 @@ class ggr_aac(aligncompute):
                 j = random.choice(range(0, self.aX.size()))
                 self.f[j]=list(range(self.aX.n_nodes))
                 m_1=self.aX.X[j]
+                print(m1.x)
                 for i in range(0,self.aX.size()):
                     if(i!=j):
                         # Align X to Y

@@ -58,6 +58,7 @@ class alignment:
             self.aX=copy.deepcopy(self.X)
             self.aX.grow(self.Y.nodes())
             self.aX.permute(self.f)
+        return self.aX
     
     # Define or return the alignment source
     def alignedTarget(self):

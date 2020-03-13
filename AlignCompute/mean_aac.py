@@ -6,9 +6,10 @@
 # Step4: m=mean_current_loop
 # repreat step2-4 until m is not changing
 
-from core import Graph
+from core import Graph,GraphSet
 from AlignCompute import aligncompute
 import numpy as np
+import random
 
 import copy
 
@@ -23,12 +24,13 @@ class mean_aac(aligncompute):
         self.cov=None
     
     def align_and_est(self):
-        # first Candidate:
-        m_1=self.aX.X[0]
-        # k=100 maximum number of iteration
+        # Select a Random Candidate:
+        first_id=random.randint(0,self.aX.size()-1)
+        m_1=self.aX.X[first_id]
+        self.f[first_id] = range(self.aX.n_nodes)
+        # k=200 maximum number of iteration
         for k in range(200):
-            self.f[0]=range(self.aX.n_nodes)
-            for i in range(1,self.X.size()):
+            for i in range(self.X.size()):
                 # Align X to Y
                 a=self.matcher.align(self.aX.X[i],m_1)
                 # Permutation of X to go closer to Y
@@ -43,6 +45,16 @@ class mean_aac(aligncompute):
             
             if(step_range<0.001):
                 self.mean=m_2
+                # Update aX with the final permutations:
+                Aligned=GraphSet()
+                Aligned.add(self.aX.X[0])
+                for i in range(1,self.X.size()):
+                    G=self.aX.X[i]
+                    G.permute(self.f[i])
+                    Aligned.add(G)
+                    del G
+                self.aX=copy.deepcopy(Aligned)
+                del Aligned
                 print("Step Range smaller than 0.001")
                 return
             else:
@@ -53,9 +65,29 @@ class mean_aac(aligncompute):
         print("Maximum number of iteration reached.")  
         if('m_2' in locals()):
             self.mean=m_2
+            # Update aX with the final permutations:
+            Aligned = GraphSet()
+            Aligned.add(self.aX.X[0])
+            for i in range(1, self.X.size()):
+                G = self.aX.X[i]
+                G.permute(self.f[i])
+                Aligned.add(G)
+                del G
+            self.aX = copy.deepcopy(Aligned)
+            del Aligned
             del m_2,m_1
         else:
             self.mean=m_1
+            # Update aX with the final permutations:
+            Aligned = GraphSet()
+            Aligned.add(self.aX.X[0])
+            for i in range(1, self.X.size()):
+                G = self.aX.X[i]
+                G.permute(self.f[i])
+                Aligned.add(G)
+                del G
+            self.aX = copy.deepcopy(Aligned)
+            del Aligned
             del m_1
         
         
