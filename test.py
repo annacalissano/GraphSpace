@@ -1,3 +1,10 @@
+# This is a test.py code to test the package
+
+import os
+import sys
+sys.path.append("C:\\Users\\Anna\\OneDrive - Politecnico di Milano\\Windows\\Polimi\\Ricerca\\Regression\\GraphSpace\\")
+
+
 from core import Graph, GraphSet, Mean, MeanIterative
 from distance import euclidean
 from matcher import GA, ID
@@ -65,6 +72,7 @@ G = GraphSet()
 G.add(Graph(x=x1, y=None, adj=None))
 G.add(Graph(x=x2, y=None, adj=None))
 G.add(Graph(x=x3, y=None, adj=None))
+
 
 # or import a GraphSet
 X = GraphSet()
