@@ -20,6 +20,7 @@ class GraphSet:
     
     def __init__(self,graph_type=None):
         self.X = []
+        # Specify the type of graph - default undirected
         if(graph_type==None):
             self.g_type='undirected'
         else:
@@ -103,6 +104,7 @@ class GraphSet:
         i=0
 
         fh.writelines("GraphSet"+" "+str(self.size())+'\n')
+        # Write down if the graph is directed or undirected
         fh.writelines("GRAPH_TYPE" + " " + str(self.g_type) + '\n')
         i=next(k for k in range(self.size()) if self.X[k].edge_attr!=0)
         if(self.X[i].node_attr>=2):

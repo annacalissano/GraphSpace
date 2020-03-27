@@ -259,8 +259,9 @@ class Graph:
                 fj=f[j0]
                 _x[f[i],f[j0]]=self.x[i,j0]
                 _adj[fi].append(fj)
-        self.x=_x
-        self.adj=_adj
+        del(self.x,self.adj)
+        self.x=copy.deepcopy(_x)
+        self.adj=copy.deepcopy(_adj)
     
     # Scale the attributes of node and edges within a network
     def feature_scale(self):
@@ -413,8 +414,8 @@ class Graph:
             _x=self.extract_layer(layer,node_too)
             G = nx.Graph()
             G.add_nodes_from(range(self.n_nodes))
-            G.add_edges_from(list(_x.keys()))
-            nx.set_edge_attributes(G, _x, 'weight')
+            G.add_edges_from([e for e in list(_x.keys()) if e[0]!=e[1]])
+            nx.set_edge_attributes(G, dict((k,float(v[0])) for k,v in _x.items()), 'weight')
         else:
             print("Caution: No Layer Specified")
             G = nx.Graph()

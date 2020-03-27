@@ -18,11 +18,13 @@ class alignment:
     def __init__(self,X,Y,f,measure):
         self.X=X # original graph to be aligned
         self.Y=Y #target original graph
-        self.aY=copy.deepcopy(Y) #to aligned y
-        self.aY=self.aY.grow(self.X.nodes()) #aligned y
-        self.aX=None # to aligned y
         self.f=f # permuting vector
         self.measure=measure # the distance between networks
+        self.aY=copy.deepcopy(Y) #to aligned y
+        #self.aY=self.aY.grow(self.X.nodes()) # aligned y
+        self.aX=None # to aligned y
+        self.alignedSource()
+
 
     
     
@@ -67,43 +69,78 @@ class alignment:
     # Compute the distance between the two aligned graphs
     # Output:
     # - dis: scalar representing the distance
+    # def dis(self):
+    #     self.alignedSource()
+    #     nX=self.aX.nodes()
+    #     print("Number of nodes"+str(nX))
+    #     dis=0.0
+    #     # the two adjency matrix
+    #     x=self.aX.matrix()
+    #     y=self.aY.matrix()
+    #     adjX=self.aX.adj
+    #     adjY=self.aY.adj
+    #     for i in range(nX):
+    #         if((i,i) in x and (i,i) in y):
+    #             dis+=self.measure.node_dis(x[i,i],y[i,i])
+    #         elif((i,i) in x and not (i,i) in y):
+    #             dis+=self.measure.node_dis(x[i,i],[0])
+    #         elif((not (i,i) in x) and (i,i) in y):
+    #             dis+=self.measure.node_dis([0],y[i,i])
+    #         linked_nodes=[]
+    #         if(i in adjX and i in adjY):
+    #             linked_nodes=set(adjX[i]).union(set(adjY[i]))
+    #         else:
+    #             if(i in adjX and not i in adjY):
+    #                 linked_nodes=set(adjX[i])
+    #             if(i in adjY and not i in adjX):
+    #                 linked_nodes=set(adjY[i])
+    #         for j in linked_nodes:
+    #             # Both edges don't exist in both networks (impossible)
+    #             if((not (i,j) in y) and (not (i,j) in x)):
+    #                    continue
+    #             # Both edges exist in both networks
+    #             elif((i,j) in y and (i,j) in x):
+    #                 dis+=self.measure.edge_dis(x[i,j],y[i,j])
+    #             elif(not (i,j) in y):
+    #                 dis+=self.measure.edge_dis(x[i,j],[0])
+    #             elif(not (i,j) in x):
+    #                 dis+=self.measure.edge_dis([0],y[i,j])
+    #     return dis
+
+    # Computing distance between two graph
+    # the_sim is the father function calling node_dis and edge_dis
+    # GraphSpace framework allows for different type of attributes on nodes and edges,
+    # so two different sim are implemented
+    # see node_dis and edge_dis in measure for details
     def dis(self):
-        self.alignedSource()
-        nX=self.aX.nodes()
-        dis=0.0
-        # the two adjency matrix
-        x=self.aX.matrix()
-        y=self.aY.matrix()
-        adjX=self.aX.adj
-        adjY=self.aY.adj
-        for i in range(nX):
-            if((i,i) in x and (i,i) in y):
-                dis+=self.measure.node_dis(x[i,i],y[i,i])
-            elif((i,i) in x and not (i,i) in y):
-                dis+=self.measure.node_dis(x[i,i],[0])
-            elif((not (i,i) in x) and (i,i) in y):
-                dis+=self.measure.node_dis([0],y[i,i])
-            linked_nodes=[]
-            if(i in adjX and i in adjY):
-                linked_nodes=set(adjX[i]).union(set(adjY[i]))
-            else:
-                if(i in adjX and not i in adjY):
-                    linked_nodes=set(adjX[i])
-                if(i in adjY and not i in adjX):
-                    linked_nodes=set(adjY[i])
-            for j in linked_nodes:
-                # Both edges don't exist in both networks (impossible)
-                if((not (i,j) in y) and (not (i,j) in x)):
-                       continue
-                # Both edges exist in both networks
-                elif((i,j) in y and (i,j) in x):
-                    dis+=self.measure.edge_dis(x[i,j],y[i,j])
-                elif(not (i,j) in y):
-                    dis+=self.measure.edge_dis(x[i,j],[0])
-                elif(not (i,j) in x):
-                    dis+=self.measure.edge_dis([0],y[i,j])
+        aX = copy.deepcopy(self.X)
+        aY = copy.deepcopy(self.Y)
+        n = aX.n_nodes
+        x = aX.matrix()
+        y = aY.matrix()
+        dis = 0
+        for i in range(n):
+            fi = self.f[i]
+            dis += self.measure.node_dis(x[i, i], y[fi, fi])
+            for j in range(i + 1, n):
+                fj = self.f[j]
+                if ((i, j) in x and (fi, fj) in y):
+                    dis += self.measure.edge_dis(x[i, j], y[fi, fj])
+                else:
+                    if ((i, j) in x):
+                        dis += self.measure.edge_dis(x[i, j], 0)
+                    elif ((fi, fj) in y):
+                        dis += self.measure.edge_dis(y[fi, fj], 0)
+
+                if ((j, i) in x and (fj, fi) in y):
+                    dis += self.measure.edge_dis(x[j, i], y[fj, fi])
+                else:
+                    if ((j, i) in x):
+                        dis += self.measure.edge_dis(x[j, i], 0)
+                    elif ((fj, fi) in y):
+                        dis += self.measure.edge_dis(y[fj, fi], 0)
         return dis
-          
+
     # Compute the similarity between the two aligned graphs
     # Output:
     # - sim: scalar representing the similarity

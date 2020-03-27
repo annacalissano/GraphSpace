@@ -95,9 +95,9 @@ class Matcher(object):
         aX=copy.deepcopy(self.X)
         aY=copy.deepcopy(self.Y)
         self.match(aX,aY)
+        n=aX.n_nodes
         x=aX.matrix()
         y=aY.matrix()
-        n=aX.n_nodes
         dis=0
         for i in range(n):
             fi=self.f[i]
@@ -111,7 +111,7 @@ class Matcher(object):
                         dis+=self.measure.edge_dis(x[i,j],0)
                     elif((fi,fj) in y):
                         dis+=self.measure.edge_dis(y[fi,fj],0)
-                
+
                 if((j,i) in x and (fj,fi) in y):
                     dis+=self.measure.edge_dis(x[j,i],y[fj,fi])
                 else:
