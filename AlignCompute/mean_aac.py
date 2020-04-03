@@ -47,7 +47,7 @@ class mean_aac(aligncompute):
                 self.mean=m_2
                 # Update aX with the final permutations:
                 Aligned=GraphSet()
-                Aligned.add(self.aX.X[0])
+                # Aligned.add(self.aX.X[0])
                 for i in range(self.X.size()):
                     G=self.aX.X[i]
                     G.permute(self.f[i])
