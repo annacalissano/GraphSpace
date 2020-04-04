@@ -106,6 +106,19 @@ n_comp=2
 p=gpc_aac(G,GA(),euclidean())
 p.align_and_est(n_comp,scale=False,s=[0,10])
 
+# To project the data along the i-th GPC you need to:
+# - create the geodesic by interpolation the two points barycenter and p.e_vec.X[i]
+# - save the graphs along the geodesic that correspond to the scores (p.scores[:,i])
+# For example the first GPC:
+n_gpc=0
+Vector=p.e_vec.X[n_gpc]
+Bar=p.barycenter_net
+l=list(np.sort(p.scores[:,n_gpc]))
+G_along_GPC=GraphSet()
+for i in range(len(l)):
+    G_along_GPC.add(p.add(1,Bar,l[i],Vector,range(Vector.n_nodes)))
+    print(G_along_GPC.X[i].x)
+
 # Align All and Compute GGR regression scalar on graph
 G=GraphSet()
 G.read_from_text("ErdosReny_100.txt")
