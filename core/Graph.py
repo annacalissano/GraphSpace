@@ -217,7 +217,7 @@ class Graph:
     def isZero(self):
         for i in range(self.n_nodes):
             if(self.x[i,i]!=0):
-                return false;
+                return False;
             degree=self.degree(i)
             for j in range(degree):
                 j0=self.adj[i][j]
