@@ -419,6 +419,21 @@ class Graph:
         df_0 = pd.DataFrame([np.array([self.x[item][0] if item in self.x.keys() else 0.0 for item in iset])],columns=col_i)
         return df_0
 
+    # GENERALIZATION to node_attrib > 1 !!!
+    # From Graph to vector structure, for all the elements in the set iset of indices (i,j) given
+    # If the graph has no (i,j) element, its value is set to 0
+    # The vector is building unrolling the adj matrix by row
+    # The dimension of the vector is #edges*n_attr_edges+#nodes*n_attr_nodes= N*(N-1)*#e_attr+N*n_attr
+    def to_vector_with_select_attributes_gen(self, iset):
+        n_a=self.node_attr
+        e_a=self.edge_attr
+        if(n_a*e_a!=1):
+            return "Error: Up to now, the node or edge attribute is a scalar"
+
+        # working on the column names:
+        col_i=[str(item) for item in iset]
+        df_0 = pd.DataFrame([np.array([self.x[item][0] if item in self.x.keys() else 0.0 for item in iset])],columns=col_i)
+        return df_0
 
     # To Networkx Object: this function convert the graph to a networkx object
     # input:

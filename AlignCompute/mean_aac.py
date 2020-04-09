@@ -26,10 +26,12 @@ class mean_aac(aligncompute):
     def align_and_est(self):
         # Select a Random Candidate:
         first_id=random.randint(0,self.aX.size()-1)
+        # first_id = 318
         m_1=self.aX.X[first_id]
         self.f[first_id] = range(self.aX.n_nodes)
         # k=200 maximum number of iteration
         for k in range(200):
+            # print(k)
             for i in range(self.X.size()):
                 # Align X to Y
                 a=self.matcher.align(self.aX.X[i],m_1)

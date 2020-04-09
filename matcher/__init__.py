@@ -7,4 +7,5 @@ from .GAS1 import GAS1
 from .GAS2 import GAS2
 from .GAS3 import GAS3
 from .GAS4 import GAS4
+from .GAS5 import GAS5
 from .ID import ID

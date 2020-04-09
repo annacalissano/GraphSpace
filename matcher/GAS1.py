@@ -23,66 +23,65 @@ class GAS1(Matcher):
         self.Y=Y
         
         nX=self.X.nodes()
-        # nY=self.Y.nodes()
-        set_I = range(nX)
-        
-        # building up the matrix of pairwise distances:
 
-        # GAS V0 - not working properly, if null edges are not defined (to 0.0)
-#        gas = pd.DataFrame(pairwise_distances(X.to_vector_with_attributes().transpose(),
-#                                              Y.to_vector_with_attributes().transpose()),
-#                           columns = Y.to_vector_with_attributes().columns,
-#                           index = X.to_vector_with_attributes().columns)
+        # set of non-zero nodes (i,i) that are in X or in Y
+        # note. assuming that if there is an edge (i,j), both i and j have non-zero attribute
+        isetn = set((i, j) for ((i, j), y) in self.X.x.items() if y != [0] if i == j).union(
+            set((i, j) for ((i, j), y) in self.Y.x.items() if y != [0] if i == j))
+        # set of indices i of non-zero nodes (i,i) that are in X or in Y
+        isetnn = {i for (i, j) in isetn}
+        # set of edges btw non-zero nodes that are in X or in Y
+        isete = {(i, j) for i in isetnn for j in isetnn if i != j}
 
-        
-        # GAS V1 - slow
-        # Create Graph set:
-#        GG = GraphSet()
-#        GG.add(self.X)
-#        GG.add(self.Y)
-#        gg_mat = GG.to_matrix_with_attr()
-#        gas = pd.DataFrame(pairwise_distances(gg_mat.iloc[[0]].transpose(),
-#                                              gg_mat.iloc[[1]].transpose()),
-#                           columns = gg_mat.iloc[[1]].columns,
-#                           index = gg_mat.iloc[[0]].columns)
-#        del GG, gg_mat
-        
-        # GAS V2
-        # set of non-zero indices (i,j) that are in X or in Y
-        iset = set([x for (x,y) in self.X.x.items() if y!=[0]]).union(set([x for (x,y) in self.Y.x.items() if y!=[0]]))
-        # # set of indices (i,j) that are in X or in Y
-        # iset = set(self.X.x.keys()).union(set(self.Y.x.keys()))
-        x_vec = X.to_vector_with_select_attributes(iset)
-        y_vec = Y.to_vector_with_select_attributes(iset)
-        gas = pd.DataFrame(pairwise_distances(x_vec.transpose(),
-                                              y_vec.transpose()),
-                           columns = y_vec.columns,
-                           index = x_vec.columns)
-        del x_vec, y_vec
-        
-        # GAS V3
-#        GG.get_node_attr()
-#        vip1 = set([k and v for ((k,v),j) in GG.X[1].x.items() if j!=[0]*GG.node_attr]) # and v
-#        vip2 = set([k and v for ((k,v),j) in GG.X[2].x.items() if j!=[0]*GG.node_attr])
-#        vip =vip1.union(vip2)
+        # building up the matrix of pairwise distances btw nodes:
+        x_vec_n = self.X.to_vector_with_select_attributes(isetn)
+        y_vec_n = self.Y.to_vector_with_select_attributes(isetn)
+        gas_n = pd.DataFrame(pairwise_distances(x_vec_n.transpose(),
+                                                y_vec_n.transpose()),
+                             columns=y_vec_n.columns,
+                             index=x_vec_n.columns)
+        del x_vec_n, y_vec_n
 
-                
+        # building up the matrix of pairwise distances btw edges:
+        x_vec_e = self.X.to_vector_with_select_attributes(isete)
+        y_vec_e = self.Y.to_vector_with_select_attributes(isete)
+        gas_e = pd.DataFrame(pairwise_distances(x_vec_e.transpose(),
+                                                y_vec_e.transpose()),
+                             columns=y_vec_e.columns,
+                             index=x_vec_e.columns)
+        del x_vec_e, y_vec_e
+        
         # optimization model:
+
         # initialize the model
         opt_model = cpx.Model(name="HP Model")
 
         # list of binary variables: 1 if i match j, 0 otherwise
         # x_vars is n x n
-        x_vars  = {(i,u): opt_model.binary_var(name="x_{0}_{1}".format(i,u))
-                   for i in set_I for u in set_I}
-        
-        # constraints - imposing that there is a one to one correspondece between the nodes in the two networks
-        # note. the constrains are created in opt_model.add_constraint
-        constraint_sr = {u : opt_model.add_constraint(ct=opt_model.sum(x_vars[i,u] for i in set_I) 
-                                                    == 1,ctname="constraint_{0}".format(u)) for u in set_I}
+        x_vars = {(i, u): opt_model.binary_var(name="x_{0}_{1}".format(i, u))
+                  for i in isetnn
+                  for u in isetnn}
 
-        constraints_cr = {(nX+i) : opt_model.add_constraint(ct=opt_model.sum(x_vars[i,u] for u in set_I) 
-                                                    == 1,ctname="constraint_{0}".format(i)) for i in set_I} 
+        # constraints - imposing that there is a one to one correspondence between the nodes in the two networks
+        opt_model.add_constraints_((opt_model.sum(x_vars[i, u] for i in isetnn) == 1
+                                    for u in isetnn),
+                                   ("constraint_r{0}".format(u) for u in isetnn))
+
+        opt_model.add_constraints_((opt_model.sum(x_vars[i, u] for u in isetnn) == 1
+                                    for i in isetnn),
+                                   ("constraint_c{0}".format(i) for i in isetnn))
+
+        # opt_model.add_constraints_((opt_model.sum(x_vars[i,u] for i in {i for (i,w) in iset if w ==u}) == 1
+        #                             for u in isety),
+        #                            ("constraint_r{0}".format(u) for u in isety))
+        # constraint_sr = {u : (opt_model.sum(x_vars[i,u] for i in {i for (i,u) in iset})) for u in isety}
+        # constraint_sr = {u2: (opt_model.sum(x_vars[i, u2] for i in {i for (i, u2) in iset})) for u2 in isety}
+        #
+        # constraint_sr = {u : opt_model.add_constraint(ct=opt_model.sum(x_vars[i,u] for (i,u) in iset)
+        #                                             == 1,ctname="constraint_{0}".format(u)) for u in set_I}
+        #
+        # constraints_cr = {(nX+i) : opt_model.add_constraint(ct=opt_model.sum(x_vars[i,u] for u in set_I)
+        #                                             == 1,ctname="constraint_{0}".format(i)) for i in set_I}
         
         # objective function - sum the distance between nodes and the distance between edges
         # e.g. (i,i) is a node in X, (u,u) is a node in Y, (i,j) is an edge in X, (u,v) is an edge in Y.
@@ -95,24 +94,34 @@ class GAS1(Matcher):
 #                                                                  for u in set_I
 #                                                                  for j in set_I if j != i
 #                                                                  for v in set_I if v != u)
-        
-        set_I = set([i for (i,i) in iset]) 
-        objective = opt_model.sum(x_vars[i,u] * gas.loc['({0}, {0})'.format(i), '({0}, {0})'.format(u)]
-                                  for i in set_I 
-                                  for u in set_I) + opt_model.sum(x_vars[i,u] * x_vars[j,v] * gas.loc['({0}, {1})'.format(i,j), 
-                                                                                                      '({0}, {1})'.format(u,v)]
-                                                                  for (i,j) in iset if i!=j
-                                                                  for (u,v) in iset if u!=v)
+
+        objective = opt_model.sum(x_vars[i, u] * gas_n.loc['({0}, {0})'.format(i), '({0}, {0})'.format(u)]
+                                  for i in isetnn
+                                  for u in isetnn) + opt_model.sum(
+            x_vars[i, u] * x_vars[j, v] * gas_e.loc['({0}, {1})'.format(i, j),
+                                                    '({0}, {1})'.format(u, v)]
+            for (i, j) in isete
+            for (u, v) in isete)
+
         # Minimizing the distances as specified in the objective function
         opt_model.minimize(objective)
         # Finding the minimum
         opt_model.solve()
 
         # Save in f the permutation: <3
-        ff = {k:v.solution_value for k, v in x_vars.items()}
-        self.f = [k for (j,k), v in ff.items() if v == 1]
-        
-        del gas
+        ff = [k for k, v in x_vars.items() if v.solution_value == 1]
+        if len(ff) < nX:
+            # if the number of nodes involved in the matching, i.e. non-zero nodes, is smaller than the total,
+            # set up the permutation vector in the proper way
+            # e.g. X nodes 1,3 Y nodes 1,4 -> isetnn={1,3,4} -> len(x_vars>0)=3
+            # -> i want to avoid st. like f=[4,1,3] because i want len(f)=nX
+            self.f = list(range(nX))
+            for (i, k) in ff:
+                self.f[i] = k
+        else:
+            self.f = [k for (j, k) in ff]
+
+        del gas_n, gas_e
 
         # <3
  
