@@ -1,21 +1,17 @@
+# This is a test_matcher.py code to test the performance of the selected matcher
+# In particular, it compares GA, GAS and GAS1 (but it works for any other matcher)
+# for different graphsets
+
 # Import packages
 from AlignCompute import mean_aac
 from core import Graph
 from core import GraphSet
-from core import Mean
-from core import MeanIterative
-from matcher import Matcher, alignment, GA, ID, GAS
-from matcher import GAS1, GAS2, GAS3, GAS4
+from matcher import Matcher, alignment, GA, ID, GAS, GAS1
 from distance import euclidean
 
-import math
 import numpy as np
-import pandas as pd
 from scipy import stats
 from scipy.sparse import lil_matrix, vstack
-
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
 import time
 
 # np.random.seed(10)
@@ -155,31 +151,7 @@ mu.align_and_est()
 elapsed_time_gas = (time.time() - start)
 print(elapsed_time_gas)
 
-# GAS4
-start = time.time()
-match4 = GAS4()
-mu4 = mean_aac(Y, match4)
-mu4.align_and_est()
-elapsed_time_gas4 = (time.time() - start)
-print(elapsed_time_gas4)
-
-# GAS2
-start = time.time()
-match2 = GAS2()
-mu2 = mean_aac(Y, match2)
-mu2.align_and_est()
-elapsed_time_gas2 = (time.time() - start)
-print(elapsed_time_gas2)
-
-# GAS3
-start = time.time()
-match3 = GAS3()
-mu3 = mean_aac(Y, match3)
-mu3.align_and_est()
-elapsed_time_gas3 = (time.time() - start)
-print(elapsed_time_gas3)
-
-# GAS1
+# GAS1: GAS linear version
 start = time.time()
 match1 = GAS1()
 mu1 = mean_aac(Y, match1)
@@ -188,7 +160,7 @@ elapsed_time_gas1 = (time.time() - start)
 print(elapsed_time_gas1)
 
 
-### checking solutions:
+### print solutions:
 # GA
 print(mu_ga.aX.to_matrix_with_attr().loc[0:5,:])
 mu_ga.f.values()
@@ -199,16 +171,9 @@ print(mu.aX.to_matrix_with_attr().loc[0:5,:])
 mu.f.values()
 MU = mu.mean
 print(MU.x)
-# GAS4
-MU4 = mu4.mean
-print(MU4.x)
-# GAS2
-MU2 = mu2.mean
-print(MU2.x)
-# GAS3
-MU3 = mu3.mean
-print(MU3.x)
 # GAS1
+print(mu1.aX.to_matrix_with_attr().loc[0:5,:])
+mu1.f.values()
 MU1 = mu1.mean
 print(MU1.x)
 
@@ -235,24 +200,7 @@ mu.align_and_est()
 elapsed_time_gas = (time.time() - start)
 print(elapsed_time_gas)
 
-
-# GAS4
-start = time.time()
-match4 = GAS4()
-mu4 = mean_aac(YY, match4)
-mu4.align_and_est()
-elapsed_time_gas4 = (time.time() - start)
-print(elapsed_time_gas4)
-
-# GAS2
-start = time.time()
-match2 = GAS2()
-mu2 = mean_aac(YY, match2)
-mu2.align_and_est()
-elapsed_time_gas2 = (time.time() - start)
-print(elapsed_time_gas2)
-
-# GAS1
+# GAS1: GAS linear version
 start = time.time()
 match1 = GAS1()
 mu1 = mean_aac(YY, match1)
@@ -281,23 +229,7 @@ mu.align_and_est()
 elapsed_time_gas = (time.time() - start)
 print(elapsed_time_gas)
 
-# GAS4
-start = time.time()
-match4 = GAS4()
-mu4 = mean_aac(X2, match4)
-mu4.align_and_est()
-elapsed_time_gas4 = (time.time() - start)
-print(elapsed_time_gas4)
-
-# GAS2
-start = time.time()
-match2 = GAS2()
-mu2 = mean_aac(X2, match2)
-mu2.align_and_est()
-elapsed_time_gas2 = (time.time() - start)
-print(elapsed_time_gas2)
-
-# GAS1
+# GAS1: GAS linear version
 start = time.time()
 match1 = GAS1()
 mu1 = mean_aac(X2, match1)
@@ -327,23 +259,7 @@ mu.align_and_est()
 elapsed_time_gas = (time.time() - start)
 print(elapsed_time_gas)
 
-# GAS4
-start = time.time()
-match4 = GAS4()
-mu4 = mean_aac(G, match4)
-mu4.align_and_est()
-elapsed_time_gas4 = (time.time() - start)
-print(elapsed_time_gas4)
-
-# GAS2
-start = time.time()
-match2 = GAS2()
-mu2 = mean_aac(G, match2)
-mu2.align_and_est()
-elapsed_time_gas2 = (time.time() - start)
-print(elapsed_time_gas2)
-
-# GAS1
+# GAS1: GAS linear version
 start = time.time()
 match1 = GAS1()
 mu1 = mean_aac(G, match1)
@@ -351,7 +267,25 @@ mu1.align_and_est()
 elapsed_time_gas1 = (time.time() - start)
 print(elapsed_time_gas1)
 print(mu1.f.values())
+
+### print solutions:
+# GA
+print(mu_ga.aX.to_matrix_with_attr().loc[0:5,:])
+mu_ga.f.values()
+MU_ga = mu_ga.mean
+print(MU_ga.x)
+# GAS
+print(mu.aX.to_matrix_with_attr().loc[0:5,:])
+mu.f.values()
+MU = mu.mean
+print(MU.x)
+# GAS1
+print(mu1.aX.to_matrix_with_attr().loc[0:5,:])
+mu1.f.values()
 MU1 = mu1.mean
-#print(MU1.x)
-print(match1.the_dis(MU1, G.X[0]) + match1.the_dis(MU1, G.X[1]) + match1.the_dis(MU1, G.X[2]))
-print(match1.the_dis(MU1, G.X[0])**2 + match1.the_dis(MU1, G.X[1])**2 + match1.the_dis(MU1, G.X[2])**2)
+print(MU1.x)
+
+
+#print(MU.x)
+#print(match.the_dis(MU, G.X[0]) + match.the_dis(MU, G.X[1]) + match.the_dis(MU, G.X[2]))
+#print(match.the_dis(MU, G.X[0])**2 + match.the_dis(MU, G.X[1])**2 + match.the_dis(MU, G.X[2])**2)
