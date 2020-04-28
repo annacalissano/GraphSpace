@@ -144,6 +144,7 @@ start = time.time()
 match_ga = GA()
 mu_ga = mean_aac(Y, match_ga)
 mu_ga.align_and_est()
+elapsed_time_ga = (time.time() - start)
 print(elapsed_time_ga)
 
 # GAS
@@ -303,3 +304,54 @@ mu1 = mean_aac(X2, match1)
 mu1.align_and_est()
 elapsed_time_gas1 = (time.time() - start)
 print(elapsed_time_gas1)
+
+
+####################################################
+############# Fourth Graphset: G ###################
+#---------------------------------------------------
+
+# Align All and Compute Mean
+start = time.time()
+match_ga = GA()
+mu_ga = mean_aac(G, match_ga)
+mu_ga.align_and_est()
+elapsed_time_ga = (time.time() - start)
+print(elapsed_time_ga)
+mu_ga.f.values()
+
+# GAS
+start = time.time()
+match = GAS()
+mu = mean_aac(G, match)
+mu.align_and_est()
+elapsed_time_gas = (time.time() - start)
+print(elapsed_time_gas)
+
+# GAS4
+start = time.time()
+match4 = GAS4()
+mu4 = mean_aac(G, match4)
+mu4.align_and_est()
+elapsed_time_gas4 = (time.time() - start)
+print(elapsed_time_gas4)
+
+# GAS2
+start = time.time()
+match2 = GAS2()
+mu2 = mean_aac(G, match2)
+mu2.align_and_est()
+elapsed_time_gas2 = (time.time() - start)
+print(elapsed_time_gas2)
+
+# GAS1
+start = time.time()
+match1 = GAS1()
+mu1 = mean_aac(G, match1)
+mu1.align_and_est()
+elapsed_time_gas1 = (time.time() - start)
+print(elapsed_time_gas1)
+print(mu1.f.values())
+MU1 = mu1.mean
+#print(MU1.x)
+print(match1.the_dis(MU1, G.X[0]) + match1.the_dis(MU1, G.X[1]) + match1.the_dis(MU1, G.X[2]))
+print(match1.the_dis(MU1, G.X[0])**2 + match1.the_dis(MU1, G.X[1])**2 + match1.the_dis(MU1, G.X[2])**2)

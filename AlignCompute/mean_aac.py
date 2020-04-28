@@ -31,7 +31,7 @@ class mean_aac(aligncompute):
         self.f[first_id] = range(self.aX.n_nodes)
         # k=200 maximum number of iteration
         for k in range(200):
-            # print(k)
+        #    print(k)
             for i in range(self.X.size()):
                 # Align X to Y
                 a=self.matcher.align(self.aX.X[i],m_1)

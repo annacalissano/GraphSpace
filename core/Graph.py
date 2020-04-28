@@ -404,36 +404,42 @@ class Graph:
         df_0 = pd.DataFrame([np.array([item for sublist in [v for v in self.x.values() ] for item in sublist])],columns=col_i2)
         return df_0
 
+    # INTERMEDIATE STEP: # ATTRIBUTES == 1
     # From Graph to vector structure, for all the elements in the set iset of indices (i,j) given
     # If the graph has no (i,j) element, its value is set to 0
     # The vector is building unrolling the adj matrix by row
-    # The dimension of the vector is #edges*n_attr_edges+#nodes*n_attr_nodes= N*(N-1)*#e_attr+N*n_attr
+    # The dimension of the vector is len(iset)*n_attr_edges or len(iset)*n_attr_nodes
     def to_vector_with_select_attributes(self, iset):
         n_a=self.node_attr
         e_a=self.edge_attr
-        if(n_a*e_a!=1):
-            return "Error: Up to now, the node or edge attribute is a scalar"
-
+        assert n_a*e_a==1, "This method assumes that the node or edge attribute is a scalar"
         # working on the column names:
         col_i=[str(item) for item in iset]
+        # and then creating the dataframe
         df_0 = pd.DataFrame([np.array([self.x[item][0] if item in self.x.keys() else 0.0 for item in iset])],columns=col_i)
         return df_0
 
-    # GENERALIZATION to node_attrib > 1 !!!
+    # GENERALIZATION to #attrib > 1 !!!
     # From Graph to vector structure, for all the elements in the set iset of indices (i,j) given
     # If the graph has no (i,j) element, its value is set to 0
     # The vector is building unrolling the adj matrix by row
-    # The dimension of the vector is #edges*n_attr_edges+#nodes*n_attr_nodes= N*(N-1)*#e_attr+N*n_attr
-    def to_vector_with_select_attributes_gen(self, iset):
+    # The dimension of the vector is respectively #edges*n_attr_edges and #nodes*n_attr_nodes
+    def to_vector_with_select_nodes(self, iset):
         n_a=self.node_attr
-        e_a=self.edge_attr
-        if(n_a*e_a!=1):
-            return "Error: Up to now, the node or edge attribute is a scalar"
-
         # working on the column names:
         col_i=[str(item) for item in iset]
-        df_0 = pd.DataFrame([np.array([self.x[item][0] if item in self.x.keys() else 0.0 for item in iset])],columns=col_i)
+        # and then creating the dataFrame (actually no need to create an intermediate np.array)
+        df_0 = pd.DataFrame([self.x[item] if item in self.x.keys() else [0.0]*n_a for item in iset], index=col_i)
         return df_0
+
+    def to_vector_with_select_edges(self, iset):
+        e_a = self.edge_attr
+        # working on the column names:
+        col_i = [str(item) for item in iset]
+        # and then creating the dataFrame (actually no need to create an intermediate np.array)
+        df_0 = pd.DataFrame([self.x[item] if item in self.x.keys() else [0.0]*e_a for item in iset], index=col_i)
+        return df_0
+
 
     # To Networkx Object: this function convert the graph to a networkx object
     # input:
