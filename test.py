@@ -79,14 +79,14 @@ X = GraphSet()
 X.read_from_text("Dataset.txt")
 
 # Matching Function - GA or ID:
-match = GA()
+match = GA(euclidean())
 match.dis(G.X[0], G.X[1])
 # to see the matching transformation:
 print(match.f)
 del match
 
 # Compute the mean with GA matcher
-match = ID()
+match = ID(euclidean())
 mu = Mean(G, match)
 MU = mu.mean()
 # to see the result:
@@ -95,7 +95,7 @@ print(MU.x)
 del match, mu, MU
 
 # Align All and Compute Mean
-match = GA()
+match = GA(euclidean())
 mu = mean_aac(G, match)
 mu.align_and_est()
 MU = mu.mean
@@ -103,7 +103,7 @@ print(MU.x)
 
 # Align All and Compute GPC
 n_comp=2
-p=gpc_aac(G,GA(),euclidean())
+p=gpc_aac(G,GA(euclidean()))
 p.align_and_est(n_comp,scale=False,s=[0,10])
 
 # To project the data along the i-th GPC you need to:

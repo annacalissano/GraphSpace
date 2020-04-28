@@ -15,25 +15,43 @@ import copy
 import math
 import re
 import pandas as pd
-from sklearn import linear_model
+from sklearn import linear_model,gaussian_process
+
 import random
 from matcher import GA,ID
 import scipy
 
 class ggr_aac(aligncompute):
     
-    def __init__(self,graphset,matcher,distance):
+    def __init__(self,graphset,matcher,distance,regression_model,alpha=1e-10,kernel=None,restarts=0):
         aligncompute.__init__(self,graphset,matcher)
         self.mean=None
         self.measure=distance
+        # indicate which type of regression model:
+        # OLS (e.g. network on scalar regression problems)
+        # GP (e.g. network on time regression problems)
+        self.model_type=regression_model
+        if (self.model_type=='GPR'):
+            self.alpha=alpha
+            self.restarts=restarts
+            self.models={}
+            if(kernel == None):
+                # by deafault we select an exponential kernel
+                # See kernel section in gaussian_process documentation
+                # https://scikit-learn.org/stable/modules/gaussian_process.html#gp-kernels
+                # Here we used: 1/2exp(-d(x1/l,x2/l)^2)
+                # - s is the parameter of the ConstantKernel
+                # - l is the parameter of the RBF (radial basis function) kernel
+                self.kernel = gaussian_process.kernels.ConstantKernel(1.0) * gaussian_process.kernels.RBF(1.0)
+            else:
+                self.kernel=kernel
         # Compute the domain [s_min,s_max] along which we are aligning with respect to
         # the geodesic
         self.step=[]
-        self.step_coef=GraphSet()
-        # the regression errors after alignment
+        # the regression errors pre and post alignment
         self.error=[]
-        self.regression_error=pd.DataFrame(index=range(graphset.size()), columns=range(100))
-        self.postalignment_error = pd.DataFrame(index=range(graphset.size()), columns=range(100))
+        self.regression_error=pd.DataFrame(0,index=range(graphset.size()), columns=range(100))
+        self.postalignment_error = pd.DataFrame(0,index=range(graphset.size()), columns=range(100))
 
     def align_and_est(self):
         # INITIALIZATION:
@@ -44,29 +62,28 @@ class ggr_aac(aligncompute):
         # Align all the points wrt the random candidate
         for i in range(self.X.size()):
            # Align X to Y
-           a = self.matcher.align(self.aX.X[i], m_1)
+           a = self.matcher.dis(self.aX.X[i],m_1)
            # Permutation of X to go closer to Y
-           self.f[i] = a.f
+           self.f[i] = self.matcher.f
 
 
         # Compute the first Generalized Geodesic Regression line
         E_1 = self.est(k=0)
         # Align the set wrt the geodesic
         self.align_pred(E_1[1],k=0)
-        self.error += [sum(E_1[0]._residues)]
+        if(self.model_type=='OLS'): self.error += [sum(E_1[0]._residues)]
+        else: self.error += [0]
         # AAC iterative algorithm
         # k=200 maximum number of iteration
-        for k in range(1,20):
+        for k in range(1,15):
             # Compute the first Generalized Geodesic Regression line
             E_2 = self.est(k)
             # Align the set wrt the geodesic
             self.align_pred(E_2[1],k)
             # Compute the step: the algorithmic step is computed as the square difference between the coefficients
-            step_range = abs(sum(E_1[0]._residues)-sum(E_2[0]._residues))
-            self.error+=[sum(E_2[0]._residues)]
+            step_range = abs(self.regression_error.iloc[:,k-1].sum()-self.regression_error.iloc[:,k].sum())
+            self.error+=[self.regression_error.iloc[:,k].sum()]
 
-            self.step+=[step_range]
-            self.step_coef.add(self.give_me_a_network(pd.Series(data=E_2[0].coef_.flatten(),index=self.variables_names),self.aX.node_attr,self.aX.edge_attr))
             # if(step_range<0.000005):
             #     #IF small enough, I am converging! Save and exit.
             #     self.network_coef = GraphSet()
@@ -89,28 +106,42 @@ class ggr_aac(aligncompute):
         print("Maximum number of iteration reached.")  
         # Return the result
         if('E_2' in locals()):
-            self.network_coef =GraphSet()
-            #self.vector_coef = pd.Series(data=E_2[0].coef_.flatten(), index=self.variables_names)
-            self.network_coef.add(self.give_me_a_network(pd.Series(data=E_2[0].intercept_.flatten(), index=self.variables_names), self.aX.node_attr, self.aX.edge_attr,y='Intercept'))
-            for i_th in range(E_2[0].coef_.shape[1]):
-                self.network_coef.add(
-                    self.give_me_a_network(pd.Series(data=E_2[0].coef_[:,i_th], index=self.variables_names),
-                                           self.aX.node_attr, self.aX.edge_attr, y=str('beta'+str(i_th))))
             self.model = E_2[0]
-            self.sum_residuals = sum(E_2[0]._residues)
-            del E_2,E_1
-        else:
-            self.network_coef =GraphSet()
-            #self.vector_coef = pd.Series(data=E_2[0].coef_.flatten(), index=self.variables_names)
-            self.network_coef.add(self.give_me_a_network(pd.Series(data=E_1[0].intercept_.flatten(), index=self.variables_names), self.aX.node_attr, self.aX.edge_attr,y='Intercept'))
-            for i_th in range(E_1[0].coef_.shape[1]):
-                self.network_coef.add(
-                    self.give_me_a_network(pd.Series(data=E_1[0].coef_[:,i_th], index=self.variables_names),
+            if(self.model_type=='OLS'):
+                # Return the coefficients
+                self.network_coef =GraphSet()
+                #self.vector_coef = pd.Series(data=E_2[0].coef_.flatten(), index=self.variables_names)
+                self.network_coef.add(self.give_me_a_network(pd.Series(data=E_2[0].intercept_.flatten(), index=self.variables_names), self.aX.node_attr, self.aX.edge_attr,y='Intercept'))
+                for i_th in range(E_2[0].coef_.shape[1]):
+                    self.network_coef.add(
+                        self.give_me_a_network(pd.Series(data=E_2[0].coef_[:,i_th], index=self.variables_names),
                                            self.aX.node_attr, self.aX.edge_attr, y=str('beta'+str(i_th))))
+            else:
+                # Return the prior and the posterior
+                # ATTENTION: CHECK ON THE PRIOR WITH AASA
+                self.y_post=E_2[1]
+                self.y_post_std=E_2[2]
+
+
+            del E_2,E_1
+
+        else:
             self.model = E_1[0]
-            self.sum_residuals = sum(E_1[0]._residues)
+            if(self.model_type=='OLS'):
+                # Return the coefficients
+                self.network_coef =GraphSet()
+                #self.vector_coef = pd.Series(data=E_2[0].coef_.flatten(), index=self.variables_names)
+                self.network_coef.add(self.give_me_a_network(pd.Series(data=E_1[0].intercept_.flatten(), index=self.variables_names), self.aX.node_attr, self.aX.edge_attr,y='Intercept'))
+                for i_th in range(E_1[0].coef_.shape[1]):
+                    self.network_coef.add(
+                        self.give_me_a_network(pd.Series(data=E_1[0].coef_[:,i_th], index=self.variables_names),
+                                           self.aX.node_attr, self.aX.edge_attr, y=str('beta'+str(i_th))))
+            else:
+                # Return the prior and the posterior
+                # ATTENTION: CHECK ON THE PRIOR WITH AASA
+                self.y_post=E_1[1]
+                self.y_post_std=E_1[2]
             del E_1
-        
         
     # Align wrt a geodesic
     def align_pred(self,y_pred,k):# delete k, only for the error test
@@ -120,20 +151,14 @@ class ggr_aac(aligncompute):
         # i.e. find the optimal candidate y* in [y] st d(gamma(x)-y) is minimum
         self.aX.get_node_attr()
         self.aX.get_edge_attr()
-        #print("The network ith to aling")
-        #print(self.aX.to_matrix_with_attr())
-        #print("The predicted network")
-        #print(y_pred)
+
         # for every graph save the new alignment
         for i in range(self.aX.size()):
             # transform the estimation into a network to compute the networks distances
             y_pred_net= self.give_me_a_network(y_pred.iloc[i], self.aX.node_attr, self.aX.edge_attr)
-            #a = self.matcher.align(y_pred_net,self.aX.X[i])
-            #self.f[i] = a.f
-            self.postalignment_error.iloc[i,k]=self.matcher.dis(y_pred_net, self.aX.X[i])
+            # sum of squares of distances
+            self.postalignment_error.iloc[i,k]=self.matcher.dis(self.aX.X[i],y_pred_net)
             self.f[i] = self.matcher.f
-            #self.postalignment_error.iloc[i,k]=a.dis()
-
             del(y_pred_net)
 
     # Compute the generalized geodesic regression on the total space as a regression of the aligned graph set
@@ -150,153 +175,69 @@ class ggr_aac(aligncompute):
             del(G_temp)
         del(self.aX)
         self.aX=copy.deepcopy(G_per)
-        # Transform it into a matrix
+        # Step 2: Transform it into a matrix
         y = G_per.to_matrix_with_attr()
         # parameter saved:
         self.variables_names=y.columns
+        # Step 3: create the x vector
         # Create the input value
         t = []
         for i in range(y.shape[0]):
             t += [float(G_per.X[i].y)]
         x = pd.DataFrame(data=t, index=y.index)
-        #print("The Y to fit")
-        #print(y)
-        #print("The x to fit")
-        #print(x)
-        # Create linear regression object
-        regr = linear_model.LinearRegression()
-        regr.fit(x, y)
-        along_geo_pred = pd.DataFrame(regr.predict(x),columns=self.variables_names)
-        self.regression_error.iloc[:,k] = (along_geo_pred-y).pow(2).sum(axis=1)
-        return (regr,along_geo_pred)
+        # Step 4: fit the chosen regression model
+        if(self.model_type=='OLS'):
+            # Create linear regression object
+            model = linear_model.LinearRegression()
+            model.fit(x, y)
+            along_geo_pred = pd.DataFrame(model.predict(x),columns=self.variables_names)
+            self.regression_error.iloc[:, k] = (along_geo_pred - y).pow(2).sum(axis=1)
+            return (model, along_geo_pred)
+        elif(self.model_type=='GPR'):
+
+            along_geo_pred=pd.DataFrame(index=range(y.shape[0]), columns=self.variables_names)
+            along_geo_pred_sd = pd.DataFrame(index=range(y.shape[0]), columns=self.variables_names)
+            # list in which we save the temporary regression error
+            regression_error_temp = []
+            # We are fitting a different Gaussian process for every variable (i.e. for every node or edge)
+            for m in range(len(self.variables_names)):
+                # Inizialize the gaussian process
+                model = gaussian_process.GaussianProcessRegressor(kernel=self.kernel, n_restarts_optimizer=self.restarts, alpha=self.alpha)
+                # Fitting the Gaussian Process means finding the correct hyperparameters
+                model.fit(x, y.iloc[:,m])
+                # Saving the model
+                self.models[self.variables_names[m]]=model
+                # Predict to compute the regression error (to compare with the alignment error)
+                y_pred,y_std=model.predict(x,return_std=True)
+                # save both the predicted y and the std, to estimate the posterior
+                along_geo_pred.loc[:,self.variables_names[m]] = pd.Series(y_pred)
+                along_geo_pred_sd.loc[:, self.variables_names[m]] = pd.Series(y_std)
+                # Compute the error
+                # HERE! YOU CAN SUBSTITUTE IT WITH AN ERROR FUNCTION
+                err_euclidean = (y_tr.iloc[:, 2] - y_pred).pow(2)
+                err_weighted=[err_euclidean[i] / y_std[i] for i in range(len(y_std))]
+                self.regression_error.iloc[:, k] +=err_weighted
+            return (model, along_geo_pred,y_std)
+        else:
+            raise Exception("Wrong regression model: select either OLS or GPR")
 
     # Given x_new is predicting the corresponding graph:
-    def predict(self,x_new):
+    def predict(self,x_new,std=False):
         if(not isinstance(x_new,pd.core.frame.DataFrame)):
             print("The new observation should be a pandas dataframe of real values")
         self.y_vec_pred=self.model.predict(X=x_new)
         self.y_net_pred=GraphSet()
         for i in range(self.y_vec_pred.shape[0]):
             self.y_net_pred.add(self.give_me_a_network(geo=pd.Series(data=self.y_vec_pred[i],index=self.variables_names),n_a=self.aX.node_attr,e_a=self.aX.edge_attr,y=float(x_new.loc[i])))
-
-#    def save(self,filename):
-
-
-
+        if(std==True and self.model_type=='GPR'):
+            self.y_vec_pred, self.y_std_pred = self.model.predict(X=x_new,return_std=True)
+            self.y_net_pred = GraphSet()
+            for i in range(self.y_vec_pred.shape[0]):
+                self.y_net_pred.add(
+                    self.give_me_a_network(geo=pd.Series(data=self.y_vec_pred[i], index=self.variables_names),
+                                           n_a=self.aX.node_attr, e_a=self.aX.edge_attr, y=float(x_new.loc[i])))
 
     # These functions are auxiliary function to compute the ggr
-    # add function  is the one used for computing the mean
-    def add(self,ax,A,ay,B,f):
-        # Adjency Matrix: x, y
-        y=B.x
-        G=copy.deepcopy(A)
-        G.permute(f)
-        x=G.x
-
-        # coefficients: ax, ay
-        # Links
-        adjX=G.adj
-        adjY=B.adj
-        nY=B.n_nodes
-        new={}
-        fullset=set(x.keys()).union(set(y.keys()))
-        
-        for i in range(nY):
-            if((i,i) in x and (i,i) in y):
-                new[i,i]=self.summ(ax,x[i,i],ay,y[i,i])
-            elif((i,i) in x and not (i,i) in y):
-                new[i,i]=self.summ(ax,x[i,i],ay,None)
-            elif((not (i,i) in x) and (i,i) in y):
-                new[i,i]=self.summ(ax,None,ay,y[i,i])
-                
-            #degree=self.X.degree(i)
-            linked_nodes=[]
-            if(i in adjX and i in adjY):
-                linked_nodes=set(adjX[i]).union(set(adjY[i]))
-            else:
-                if(i in adjX and not i in adjY):
-                    linked_nodes=set(adjX[i])
-                if(i in adjY and not i in adjX):
-                    linked_nodes=set(adjY[i])
-                    
-            #for j in range(degree):
-            for j in linked_nodes:
-
-                if((not (i,j) in y) and (not (i,j) in x)):
-                       continue
-                elif((i,j) in y and (i,j) in x):
-                    new[i,j]=self.summ(ax,x[i,j],ay,y[i,j])
-                elif(not (i,j) in y):
-                    #new[fi,fj]=self.summ(ax,x[i,j0],ay,[0]*len(x[i,j0]))
-                    new[i,j]=self.summ(ax,x[i,j],ay,None)
-                    #if(not x.has_key((i,j0))):
-                elif(not (i,j) in x):
-                    #new[fi,fj]=self.summ(ax,[0]*len(x[i,j0]),ay,y[fi,fj])
-                    new[i,j]=self.summ(ax,None,ay,y[i,j])
-        newG=Graph(x=new,y=None,adj=None)
-        return newG
-    
-    # Add at y a linear combination of x y=ax*y + ay*x
-    def summ(self,ax,x,ay,y): #ax,ay are scalar, x,y are vectors
-        if(x is None and y is None):
-            return None
-        else:
-            if(x is None):
-                res=[i * ay for i in y]
-                return res # ATTENTION: scalar moltiplication of scalar ay with vector y
-            else:
-                n=len(x)
-                if(y is None):
-                    y=np.zeros(n)
-                res=[]
-                for i in range(n):
-                    res+=[ax*x[i]+ay*y[i]]
-                return res
-    
-    # component wise distance function: usefull to compute the covariance
-    def dis_componentwise(self,A,B,f):
-        # Adjency Matrix: x, y
-        y=B.x
-        G=copy.deepcopy(A)
-        G.permute(f)
-        x=G.x
-        # coefficients: ax, ay
-        # Links
-        adjX=G.adj
-        adjY=B.adj
-        nX=A.n_nodes
-        new={}
-        fullset=set(x.keys()).union(set(y.keys()))
-        for i in range(nX):
-            if((i,i) in x and (i,i) in y):
-                new[i,i]=[math.sqrt(self.measure.node_dis(x[i,i],y[i,i]))]
-            elif((i,i) in x and not (i,i) in y):
-                new[i,i]=[math.sqrt(self.measure.node_dis(x[i,i],[0]))]
-            elif((not (i,i) in x) and (i,i) in y):
-                new[i,i]=[math.sqrt(self.measure.node_dis(y[i,i],[0]))]
-            
-            linked_nodes=[]
-            if(i in adjX and i in adjY):
-                linked_nodes=set(adjX[i]).union(set(adjY[i]))
-            else:
-                if(i in adjX and not i in adjY):
-                    linked_nodes=set(adjX[i])
-                if(i in adjY and not i in adjX):
-                    linked_nodes=set(adjY[i])
-                    
-            for j in linked_nodes:
-                # Both edges don't exist in both networks (impossible)
-                if((not (i,j) in y) and (not (i,j) in x)):
-                       continue
-                # Both edges exist in both networks
-                elif((i,j) in y and (i,j) in x):
-                    new[i,j]=[math.sqrt(self.measure.edge_dis(x[i,j],y[i,j]))]
-                elif(not (i,j) in y):
-                    new[i,j]=[math.sqrt(self.measure.edge_dis(x[i,j],[0]))]
-                elif(not (i,j) in x):
-                    new[i,j]=[math.sqrt(self.measure.edge_dis([0],y[i,j]))]
-        newG=Graph(x=new,y=None,adj=None)
-        return newG
     
     # geo is a pd Series
     # n_a and e_a are nodes and edges attributes

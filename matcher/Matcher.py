@@ -11,8 +11,10 @@ import math
 
 class Matcher(object):
     
-    def __init__(self,X=None,Y=None,f=None):
-        self.measure=euclidean()
+    def __init__(self,measure=euclidean(),X=None,Y=None,f=None):
+        self.measure=measure
+        # if not weighted -> weights are an n*n adjecency matrix of 1 elements
+        # if is weighted -> weights are an  n*n adjecency matrix as received in input
         self.X=None
         self.Y=None
         self.f=None
@@ -76,12 +78,12 @@ class Matcher(object):
         for i in range(nX):
             fi=self.f[i]
             if(fi<nY):
-                sim+=self.measure.node_sim(x[i,i],y[fi,fi])
+                sim+=self.measure.node_sim(x[i,i],y[fi,fi])#w[i,i]
                 degX=aX.degree(i)
                 for j in range(degX):
                     j0=adjX[i][j]
                     if(self.f[j0]<nY):
-                        sim+=self.measure.edge_sim(x[i,j0],y[fi,self.f[j0]])
+                        sim+=self.measure.edge_sim(x[i,j0],y[fi,self.f[j0]]) #w[i,j0]
         return sim
     
     # Computing distance between two graph
