@@ -11,8 +11,11 @@ import math
 
 class Matcher(object):
     
-    def __init__(self,measure=euclidean(),X=None,Y=None,f=None):
-        self.measure=measure
+    def __init__(self,measure=None,X=None,Y=None,f=None):
+        if(measure==None):
+            self.measure=euclidean()
+        else:
+            self.measure=measure
         # if not weighted -> weights are an n*n adjecency matrix of 1 elements
         # if is weighted -> weights are an  n*n adjecency matrix as received in input
         self.X=None
@@ -20,7 +23,7 @@ class Matcher(object):
         self.f=None
 
     # Core method of the Matcher: initialize the best matching permutation of nodes between X and Y
-    def match(self,X,Y):
+    def match(self,measure,X,Y):
         pass
     
     # Grows both network to have the same size

@@ -127,7 +127,7 @@ n_train=10
 X_train=G.sublist(list(range(0,n_train)))
 
 # Run GGR:
-r=ggr_aac(X_train,GA(),euclidean())
+r=ggr_aac(X_train,GA(euclidean()))
 r.align_and_est()
 
 # Proportion of variance explained
