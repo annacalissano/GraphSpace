@@ -26,7 +26,7 @@ AlignCompute:
 - gpca_aac: compute the Geodesic Pricipal Components with AAC and a given matcher [1]
 - ggr_aac: compute the Generalized Geodesic Regression with AAC and a given matcher [1]
 
-Aknowledgement: A great aknowledgment goes to Brijnesh Jain, whose code is used as a starting point for this package.
+Aknowledgement: A great aknowledgment goes to Brijnesh Jain, whose code is used as a starting point for this package. Gianluca Zeni has been massively contributing on the inplementation of the python package.
 
 Please cite the package as:
 
