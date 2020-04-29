@@ -6,14 +6,14 @@ from core import Graph
 
 # GraphSet: object graphset, i.e. create a dataset of graphs
 # X: list of graphs
-# g_type: 'undirected' or 'direct'
+# g_type: 'undirected' or 'directed'
 # node_attr: specify the node type attribute
 # edge_attr: specify the edge type attribute
 class GraphSet:
     
     # Initialize the Graphset
     # Input:
-    # - graph_type: 'undirected' or 'direct' according to the type of graph.
+    # - graph_type: 'undirected' or 'directed' according to the type of graph.
     # Note: type of graphs should be homogeneous within the Graphset
     # Note: current package only work for scalar or vector nodes and edges attribute. 
     # Stay tuned for updates!
