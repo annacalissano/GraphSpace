@@ -20,9 +20,9 @@ class GraphSet:
     
     def __init__(self,graph_type=None):
         self.X = []
-        # Specify the type of graph - default undirected
+        # Specify the type of graph - default directed
         if(graph_type==None):
-            self.g_type='undirected'
+            self.g_type='directed'
         else:
             self.g_type=str(graph_type)
         self.y='label'
