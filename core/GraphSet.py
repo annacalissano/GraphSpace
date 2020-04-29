@@ -99,7 +99,11 @@ class GraphSet:
     # Write to text file a GraphSet
     # input:
     # - filename: the .txt filename to read
-    def write_to_text(self,filename):
+    def write_to_text(self,filename,ignore_warning=False):
+        if not ignore_warning:
+            print("have you defined properly your graphSet?")
+            print("if your graphs are directed, be sure that graph_type has been correctly specified")
+            print("otherwise it won't be read properly")
         fh = open(filename,"w")
         i=0
 
