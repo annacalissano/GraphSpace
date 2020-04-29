@@ -15,13 +15,55 @@ from core import GraphSet
 from core import Mean
 from core import MeanIterative
 from matcher import Matcher, alignment, GA, ID
-from distance import euclidean
+from distance import euclidean,hamming
 
 import math
 import numpy as np
 import pandas as pd
 from scipy.sparse import lil_matrix, vstack
 
+
+# 1) BINARY GRAPHS
+# or binary graphs
+# Define the graphs:
+x1 = {}
+x1[0, 0] = [1]
+x1[1, 1] = [1]
+x1[2, 2] = [1]
+x1[3, 3] = [1]
+x1[4, 4] = [1]
+x1[5, 5] = [1]
+x1[0, 1] = [1]
+x1[1, 0] = [1]
+x1[1, 2] = [1]
+x1[2, 1] = [1]
+x1[2, 5] = [1]
+x1[3, 4] = [1]
+x1[4, 3] = [1]
+x1[5, 2] = [1]
+x2 = {}
+x2[0, 0] = [1]
+x2[1, 1] = [1]
+x2[2, 2] = [1]
+x2[3, 3] = [1]
+x2[4, 4] = [1]
+x2[5, 5] = [1]
+x2[0, 1] = [1]
+x2[1, 0] = [1]
+x2[1, 2] = [1]
+x2[2, 1] = [1]
+x2[3, 4] = [1]
+x2[4, 3] = [1]
+# Create Graph set:
+G = GraphSet()
+G.add(Graph(x=x1, y=None, adj=None))
+G.add(Graph(x=x2, y=None, adj=None))
+
+# Compute a distance with euclidean distance without matching the graphs
+match=ID(hamming())
+match.dis(G.X[0],G.X[1])
+
+# 2) GRAPHS with Euclidean scalar and vector attributes on both nodes and edges
 # Define the graphs:
 x1 = {}
 x1[0, 0] = [0.813, 0.630]
@@ -73,20 +115,24 @@ G.add(Graph(x=x1, y=None, adj=None))
 G.add(Graph(x=x2, y=None, adj=None))
 G.add(Graph(x=x3, y=None, adj=None))
 
-
 # or import a GraphSet
 X = GraphSet()
 X.read_from_text("Dataset.txt")
 
-# Matching Function - GA or ID:
-match = GA()
+# Compute the euclidean distance with or without matching between two graphs
+# Identity matching
+match = ID(euclidean())
+match.dis(G.X[0], G.X[1])
+
+# Matching Function - GA or GAS:
+match = GA(euclidean())
 match.dis(G.X[0], G.X[1])
 # to see the matching transformation:
 print(match.f)
 del match
 
 # Compute the mean with GA matcher
-match = ID()
+match = ID(euclidean())
 mu = Mean(G, match)
 MU = mu.mean()
 # to see the result:
@@ -95,7 +141,7 @@ print(MU.x)
 del match, mu, MU
 
 # Align All and Compute Mean
-match = GA()
+match = GA(euclidean())
 mu = mean_aac(G, match)
 mu.align_and_est()
 MU = mu.mean
@@ -103,7 +149,7 @@ print(MU.x)
 
 # Align All and Compute GPC
 n_comp=2
-p=gpc_aac(G,GA(),euclidean())
+p=gpc_aac(G,GA(euclidean()))
 p.align_and_est(n_comp,scale=False,s=[0,10])
 
 # To project the data along the i-th GPC you need to:
@@ -127,7 +173,7 @@ n_train=10
 X_train=G.sublist(list(range(0,n_train)))
 
 # Run GGR:
-r=ggr_aac(X_train,GA(),euclidean())
+r=ggr_aac(X_train,GA(euclidean()))
 r.align_and_est()
 
 # Proportion of variance explained

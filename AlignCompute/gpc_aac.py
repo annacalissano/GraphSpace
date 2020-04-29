@@ -22,10 +22,10 @@ import pandas as pd
 
 class gpc_aac(aligncompute):
     
-    def __init__(self,graphset,matcher,distance):
+    def __init__(self,graphset,matcher):
         aligncompute.__init__(self,graphset,matcher)
         self.mean=None
-        self.measure=distance
+        #self.measure=distance
     # Command of estimation
     # scale=True, the data are scaled
     # s range on the domain of the geodesic for optimal alignment
@@ -264,50 +264,50 @@ class gpc_aac(aligncompute):
                     res+=[ax*x[i]+ay*y[i]]
                 return res
     
-    # component wise distance function: usefull to compute the covariance
-    def dis_componentwise(self,A,B,f):
-        # Adjency Matrix: x, y
-        y=B.x
-        G=copy.deepcopy(A)
-        G.permute(f)
-        x=G.x
-        # coefficients: ax, ay
-        # Links
-        adjX=G.adj
-        adjY=B.adj
-        nX=A.n_nodes
-        new={}
-        fullset=set(x.keys()).union(set(y.keys()))
-        for i in range(nX):
-            if((i,i) in x and (i,i) in y):
-                new[i,i]=[math.sqrt(self.measure.node_dis(x[i,i],y[i,i]))]
-            elif((i,i) in x and not (i,i) in y):
-                new[i,i]=[math.sqrt(self.measure.node_dis(x[i,i],[0]))]
-            elif((not (i,i) in x) and (i,i) in y):
-                new[i,i]=[math.sqrt(self.measure.node_dis(y[i,i],[0]))]
-            
-            linked_nodes=[]
-            if(i in adjX and i in adjY):
-                linked_nodes=set(adjX[i]).union(set(adjY[i]))
-            else:
-                if(i in adjX and not i in adjY):
-                    linked_nodes=set(adjX[i])
-                if(i in adjY and not i in adjX):
-                    linked_nodes=set(adjY[i])
-                    
-            for j in linked_nodes:
-                # Both edges don't exist in both networks (impossible)
-                if((not (i,j) in y) and (not (i,j) in x)):
-                       continue
-                # Both edges exist in both networks
-                elif((i,j) in y and (i,j) in x):
-                    new[i,j]=[math.sqrt(self.measure.edge_dis(x[i,j],y[i,j]))]
-                elif(not (i,j) in y):
-                    new[i,j]=[math.sqrt(self.measure.edge_dis(x[i,j],[0]))]
-                elif(not (i,j) in x):
-                    new[i,j]=[math.sqrt(self.measure.edge_dis([0],y[i,j]))]
-        newG=Graph(x=new,y=None,adj=None)
-        return newG
+    # # component wise distance function: usefull to compute the covariance
+    # def dis_componentwise(self,A,B,f):
+    #     # Adjency Matrix: x, y
+    #     y=B.x
+    #     G=copy.deepcopy(A)
+    #     G.permute(f)
+    #     x=G.x
+    #     # coefficients: ax, ay
+    #     # Links
+    #     adjX=G.adj
+    #     adjY=B.adj
+    #     nX=A.n_nodes
+    #     new={}
+    #     fullset=set(x.keys()).union(set(y.keys()))
+    #     for i in range(nX):
+    #         if((i,i) in x and (i,i) in y):
+    #             new[i,i]=[math.sqrt(self.measure.node_dis(x[i,i],y[i,i]))]
+    #         elif((i,i) in x and not (i,i) in y):
+    #             new[i,i]=[math.sqrt(self.measure.node_dis(x[i,i],[0]))]
+    #         elif((not (i,i) in x) and (i,i) in y):
+    #             new[i,i]=[math.sqrt(self.measure.node_dis(y[i,i],[0]))]
+    #
+    #         linked_nodes=[]
+    #         if(i in adjX and i in adjY):
+    #             linked_nodes=set(adjX[i]).union(set(adjY[i]))
+    #         else:
+    #             if(i in adjX and not i in adjY):
+    #                 linked_nodes=set(adjX[i])
+    #             if(i in adjY and not i in adjX):
+    #                 linked_nodes=set(adjY[i])
+    #
+    #         for j in linked_nodes:
+    #             # Both edges don't exist in both networks (impossible)
+    #             if((not (i,j) in y) and (not (i,j) in x)):
+    #                    continue
+    #             # Both edges exist in both networks
+    #             elif((i,j) in y and (i,j) in x):
+    #                 new[i,j]=[math.sqrt(self.measure.edge_dis(x[i,j],y[i,j]))]
+    #             elif(not (i,j) in y):
+    #                 new[i,j]=[math.sqrt(self.measure.edge_dis(x[i,j],[0]))]
+    #             elif(not (i,j) in x):
+    #                 new[i,j]=[math.sqrt(self.measure.edge_dis([0],y[i,j]))]
+    #     newG=Graph(x=new,y=None,adj=None)
+    #     return newG
     
     # geo is a pd Series
     # n_a and e_a are nodes and edges attributes
