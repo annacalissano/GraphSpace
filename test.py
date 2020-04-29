@@ -55,7 +55,7 @@ x2[2, 1] = [1]
 x2[3, 4] = [1]
 x2[4, 3] = [1]
 # Create Graph set:
-G = GraphSet()
+G = GraphSet(graph_type='directed')
 G.add(Graph(x=x1, y=None, adj=None))
 G.add(Graph(x=x2, y=None, adj=None))
 
@@ -110,7 +110,7 @@ x3[3, 4] = [1]
 x3[4, 3] = [1]
 
 # Create Graph set:
-G = GraphSet()
+G = GraphSet(graph_type='directed')
 G.add(Graph(x=x1, y=None, adj=None))
 G.add(Graph(x=x2, y=None, adj=None))
 G.add(Graph(x=x3, y=None, adj=None))
