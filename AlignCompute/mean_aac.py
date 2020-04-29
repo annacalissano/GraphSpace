@@ -28,7 +28,7 @@ class mean_aac(aligncompute):
         first_id=random.randint(0,self.aX.size()-1)
         # first_id = 318
         m_1=self.aX.X[first_id]
-        self.f[first_id] = range(self.aX.n_nodes)
+        self.f[first_id] = range(self.X.n_nodes)
         # k=200 maximum number of iteration
         for self.k in range(max_iterations):
         #    print(k)
