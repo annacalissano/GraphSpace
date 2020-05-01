@@ -14,7 +14,7 @@ from core import Graph
 from core import GraphSet
 from core import Mean
 from core import MeanIterative
-from matcher import Matcher, alignment, GA, ID
+from matcher import Matcher, alignment, GA, ID, GAS, GAS1
 from distance import euclidean,hamming
 
 import math
@@ -131,7 +131,13 @@ match.dis(G.X[0], G.X[1])
 print(match.f)
 del match
 
-# Compute the mean with GA matcher
+match = GAS()   # default: euclidean
+match.dis(G.X[0], G.X[1])
+# to see the matching transformation:
+print(match.f)
+del match
+
+# Compute the mean with the identity matcher
 match = ID(euclidean())
 mu = Mean(G, match)
 MU = mu.mean()
@@ -140,12 +146,27 @@ print(MU.x)
 
 del match, mu, MU
 
-# Align All and Compute Mean
+# Align All and Compute Mean with GA matcher
 match = GA(euclidean())
 mu = mean_aac(G, match)
 mu.align_and_est()
 MU = mu.mean
 print(MU.x)
+
+del match, mu, MU
+
+# Align All and Compute Mean with GAS matcher
+match = GAS()
+# or equivalently:
+# GAS(euclidean())
+# GAS('euclidean')
+# GAS('euclidean','euclidean')
+mu = mean_aac(G, match)
+mu.align_and_est()
+MU = mu.mean
+print(MU.x)
+
+del match, mu, MU
 
 # Align All and Compute GPC
 n_comp=2
