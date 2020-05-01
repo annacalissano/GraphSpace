@@ -7,7 +7,7 @@ from munkres import Munkres
 from matcher import Matcher
 from scipy import sparse
 
-# Graduate assigned algoritm
+# Graduate assigned algorithm
 # author: brijneshjain
 
 # GA is a child of matcher
@@ -36,7 +36,7 @@ class GA(Matcher):
         self.M=None
         self.b=opt_b0
         self.swapped=False
-        self.name="Graduate assignement"
+        self.name="Graduate assignment"
         
     
     # The match function: this function find the best match (max or min) among the equivalent classes
