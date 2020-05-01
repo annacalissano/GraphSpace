@@ -1,7 +1,8 @@
 import pandas as pd
 from matcher import Matcher
 import docplex.mp.model as cpx
-from sklearn.metrics.pairwise import pairwise_distances
+from sklearn.metrics.pairwise import pairwise_distances, _VALID_METRICS
+import copy
 
 # Docplex approach
 
@@ -15,15 +16,36 @@ from sklearn.metrics.pairwise import pairwise_distances
 # GAS1 would like to improve the performance of GAS by making the optimization problem linear
 # More variables and constraints are introduced.
 
+# NOTE: valid metrics are ['euclidean', 'l2', 'l1', 'manhattan', 'cityblock', 'braycurtis',
+# 'canberra', 'chebyshev', 'correlation', 'cosine', 'dice', 'hamming', 'jaccard', 'kulsinski',
+# 'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean',
+# 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule', 'wminkowski', 'haversine']
+
 class GAS1(Matcher):
 
-    def __init__(self,X=None,Y=None,f=None):
-        Matcher.__init__(self,X,Y,f)
+    def __init__(self,X=None,Y=None,f=None,measure=None):
+        Matcher.__init__(self,X,Y,f,measure)
+        # measure can be a string - for both nodes and edges attributes
+        if isinstance(self.measure, str):
+            self.metricNode = self.metricEdge = self.measure
+        # or a list of two strings
+        elif isinstance(self.measure, list):
+            self.metricNode = self.measure[0]
+            self.metricEdge = self.measure[1]
+        # or a measure defined in a proper way in the distance folder
+        else:
+            # if sklearn has already it implemented
+            if self.measure.get_Instance() in _VALID_METRICS:
+                self.metricNode = self.metricEdge = self.measure.get_Instance()
+            # if the measure is really user-defined
+            else:
+                self.metricNode = self.measure.node_dis
+                self.metricEdge = self.measure.edge_dis
         self.name="Gaaaaaaas! - Linear"
         
     
     # The match function: this function find the best match among the equivalent classes
-    def match(self,X,Y):
+    def match(self,X,Y,storeDistance=False):
         # Take the two graphs - they have already the same size
         self.X=X
         self.Y=Y
@@ -44,7 +66,8 @@ class GAS1(Matcher):
         x_vec_n = self.X.to_vector_with_select_nodes(isetn)
         y_vec_n = self.Y.to_vector_with_select_nodes(isetn)
         gas_n = pd.DataFrame(pairwise_distances(x_vec_n,
-                                                y_vec_n),
+                                                y_vec_n,
+                                                metric=self.metricNode),
                              columns=y_vec_n.index,
                              index=x_vec_n.index)
         del x_vec_n, y_vec_n
@@ -53,7 +76,8 @@ class GAS1(Matcher):
         x_vec_e = self.X.to_vector_with_select_edges(isete)
         y_vec_e = self.Y.to_vector_with_select_edges(isete)
         gas_e = pd.DataFrame(pairwise_distances(x_vec_e,
-                                                y_vec_e) + 0.01,
+                                                y_vec_e,
+                                                metric=self.metricEdge) + 0.01,
                              # see below in the constraints the reason behind 0.01
                              columns=y_vec_e.index,
                              index=x_vec_e.index)
@@ -105,6 +129,10 @@ class GAS1(Matcher):
         opt_model.minimize(objective)
         # Finding the minimum
         opt_model.solve()
+        if storeDistance:
+            # since we have added 0.01 to the gas_e matrix, the real distance is smaller than the minimized objective
+            self.distance = opt_model.solution.get_objective_value() - 0.01 * len(isetnn) * (len(isetnn)-1)
+
 
         # Save in f the permutation: <3
         ff = [(i, u) for (i, j, u, v), z in x_vars.items() if z.solution_value == 1 if i == j if u == v]
@@ -122,6 +150,16 @@ class GAS1(Matcher):
         del gas_n, gas_e
 
         # <3
+
+    # Computing distance between two graph
+    # NOTE: overwrite the matcher method, since computing the match gives us directly the result
+    def the_dis(self, X, Y):
+        # match gives back the best combination of nodes
+        self.the_grow_and_set(X, Y)
+        aX = copy.deepcopy(self.X)
+        aY = copy.deepcopy(self.Y)
+        self.match(aX, aY, storeDistance=True)
+        return self.distance
  
             
 
