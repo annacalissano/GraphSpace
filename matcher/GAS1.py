@@ -162,6 +162,12 @@ class GAS1(Matcher):
         aY = copy.deepcopy(self.Y)
         self.match(aX, aY, storeDistance=True)
         return self.distance
- 
-            
+
+    # Computing similarity between two graph
+    # NOTE: if, in the instantiation, measure is a string, the_sim does not work
+    def the_sim(self, X, Y):
+        assert (not isinstance(self.measure, str) or not isinstance(self.measure, list)), "not implemented: \
+         change distance \n distance must be a distance object with node_sim and edge_sim methods"
+        return Matcher.the_sim(self, X, Y)
+
 
