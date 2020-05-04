@@ -43,6 +43,8 @@ class GAS(Matcher):
         
     
     # The match function: this function find the best match among the equivalent classes
+    # storeDistance is a boolean: if True, the value of the minimized objective function
+    #                             is stored (in self.distance)
     def match(self,X,Y,storeDistance=False):
         # Take the two graphs - they have already the same size
         self.X = X
