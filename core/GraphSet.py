@@ -25,6 +25,7 @@ class GraphSet:
             self.g_type='directed'
         else:
             self.g_type=str(graph_type)
+        print("You have just initialized an "+ str(self.g_type)+" GraphSets")
         self.y='label'
         self.node_attr='number'
         self.edge_attr='number'
@@ -210,7 +211,7 @@ class GraphSet:
                             continue
                         continue
                     if(block=='adj'):
-                        adj[int(g[0])]=list(map(int,g[0:len(g)]))
+                        adj[int(g[0])]=list(map(int,g[1:len(g)]))
                         continue
                 else: continue
         self.add(Graph(x=x,adj=adj,y=y))
@@ -298,17 +299,39 @@ class GraphSet:
         n_a=self.node_attr
         e_a=self.edge_attr
         # Column are all possible nodes and edges with attributes
-        col = [str(item) for sublist in [[(i_r,i_c)]*n_a if i_r==i_c else [(i_r,i_c)]*e_a for i_r in range(N) for i_c in range(N)] for item in sublist]
+        # if the graphSet is undirected, only the upper triangular part of the adjecency matrix (or tensor) is considered
+        # so only the edges (i,j) where j>i
+        if(self.g_type=='undirected'):
+            col = [str(item) for sublist in
+                   [[(i_r, i_c)] * n_a if i_r == i_c else [(i_r, i_c)] * e_a for i_r in range(N) for i_c in range(N) if
+                    i_r <= i_c]
+                   for item in sublist]
+        else:
+            col = [str(item) for sublist in [[(i_r,i_c)]*n_a if i_r==i_c else [(i_r,i_c)]*e_a for i_r in range(N) for i_c in range(N)] for item in sublist]
         columns=list(map(lambda x: x[1] + str(col[:x[0]].count(x[1]) + 1) if col.count(x[1]) > 1 else x[1], enumerate(col)))
         # creating the empty dataframe
         D=pd.DataFrame(columns=columns)
-        for i in range(self.size()):
-            # Every network is added as a row
-            col_i=[str(item) for sublist in [[k]*n_a if k[0]==k[1] else [k]*e_a for k in self.X[i].x.keys()] for item in sublist]
-            col_i2=list(map(lambda x: x[1] + str(col_i[:x[0]].count(x[1]) + 1) if col_i.count(x[1]) > 1 else x[1], enumerate(col_i)))
-            df_0 = pd.DataFrame([np.array([float(item) for sublist in [v for v in self.X[i].x.values()] for item in sublist])],columns=col_i2)
-            D = pd.concat([D, df_0], axis=0,sort=False,ignore_index=True)
-            del col_i,col_i2,df_0
+        if(self.g_type=='undirected'):
+            for i in range(self.size()):
+                # Every network is added as a row
+                col_i=[str(item) for sublist in [[k]*n_a if k[0]==k[1] else [k]*e_a if k[0]<k[1] else [(k[1],k[0])]*e_a for k in self.X[i].x.keys()] for item in sublist]
+                col_i2=list(map(lambda x: x[1] + str(col_i[:x[0]].count(x[1]) + 1) if col_i.count(x[1]) > 1 else x[1], enumerate(col_i)))
+                df_0 = pd.DataFrame([np.array([float(item) for sublist in [v for v in self.X[i].x.values()] for item in sublist])],columns=col_i2)
+                D = pd.concat([D, df_0], axis=0,sort=False,ignore_index=True)
+                del col_i,col_i2,df_0
+        else:
+            for i in range(self.size()):
+                # Every network is added as a row
+                col_i = [str(item) for sublist in [[k] * n_a if k[0] == k[1] else [k] * e_a for k in self.X[i].x.keys()]
+                         for item in sublist]
+
+                col_i2 = list(map(lambda x: x[1] + str(col_i[:x[0]].count(x[1]) + 1) if col_i.count(x[1]) > 1 else x[1],
+                                  enumerate(col_i)))
+                df_0 = pd.DataFrame(
+                    [np.array([float(item) for sublist in [v for v in self.X[i].x.values()] for item in sublist])],
+                    columns=col_i2)
+                D = pd.concat([D, df_0], axis=0, sort=False, ignore_index=True)
+                del col_i, col_i2, df_0
         M=D.fillna(0)
         return M
     # drop a nodes in all graphs of the population

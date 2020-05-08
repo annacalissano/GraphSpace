@@ -1,6 +1,10 @@
 # This is a test_matcher.py code to test the performance of the selected matcher
 # In particular, it compares GA, GAS and GAS1 (but it works for any other matcher)
 # for different graphsets
+import os
+import sys
+sys.path.append("C:\\Users\\Anna\\OneDrive - Politecnico di Milano\\Windows\\Polimi\\Ricerca\\Regression\\GraphSpace\\")
+
 
 # Import packages
 from AlignCompute import mean_aac

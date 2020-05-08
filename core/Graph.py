@@ -27,6 +27,8 @@ class Graph:
         if(y is None):
             self.y=None
         else: self.y=y # Class of the network
+        # Check on the x: the null nodes should not be in the middle.
+        # e.g. [0,1,2] can not have (0,0) (2,2) different from zero and (1,1) zero.
         self.x=copy.deepcopy(x) # nodes and edges attributes
         self.attr=None # matrix of feature vectors
         if(adj is None):
@@ -81,8 +83,8 @@ class Graph:
                     # self.x is a dictionary structure
                     for k,v in self.x.items():
                         # adjency nodes:
-                        if(k[1]!=k[0]):
-                            if(k[0] == i): s=s+[k[1]]
+                        if(k[1]!=k[0] and k[0]==i):
+                            s=s+[k[1]]
                             #if(k[1] == i): s=s+[k[0]]
                     s=list(set(s))
                     if(len(s)>0):
