@@ -16,8 +16,8 @@ class Matcher(object):
             self.measure=euclidean()
         else:
             self.measure=measure
-        # if not weighted -> weights are an n*n adjecency matrix of 1 elements
-        # if is weighted -> weights are an  n*n adjecency matrix as received in input
+        # if not weighted -> weights are an n*n adjacency matrix of 1 elements
+        # if is weighted -> weights are an  n*n adjacency matrix as received in input
         self.X=None
         self.Y=None
         self.f=None
@@ -90,9 +90,9 @@ class Matcher(object):
         return sim
     
     # Computing distance between two graph
-    # the_sim is the father function calling node_dis and edge_dis
+    # the_dis is the father function calling node_dis and edge_dis
     # GraphSpace framework allows for different type of attributes on nodes and edges,
-    # so two different sim are implemented
+    # so two different dis are implemented
     # see node_dis and edge_dis in measure for details
     def the_dis(self,X,Y):
         # match gives back the best combination of nodes
@@ -203,7 +203,7 @@ class Matcher(object):
                 d=lil_matrix((n,n))
                 for i in range(n):
                     Xi=args[0].X[i]
-                    d[i,i]=self.dis(Xi)
+                    d[i,i]=self.dis(Xi)   # shouldn't we put it directly to 0 by definition?
                     for j in range(i,n):
                         d[i,j]=self.dis(Xi,args[0].X[j])
                         d[j,i]=d[i,j]

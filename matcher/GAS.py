@@ -2,7 +2,8 @@ import pandas as pd
 from matcher import Matcher
 from core import GraphSet
 import docplex.mp.model as cpx
-from sklearn.metrics.pairwise import pairwise_distances
+from sklearn.metrics.pairwise import pairwise_distances, _VALID_METRICS
+import copy
 
 # Docplex approach
 
@@ -13,15 +14,38 @@ from sklearn.metrics.pairwise import pairwise_distances
 # solving the associated optimization problem, minimizing the sum of pairwise distances
 # between both nodes and edges. The input of cplex is a pairwise distance matrix.
 
+# NOTE: valid metrics are ['euclidean', 'l2', 'l1', 'manhattan', 'cityblock', 'braycurtis',
+# 'canberra', 'chebyshev', 'correlation', 'cosine', 'dice', 'hamming', 'jaccard', 'kulsinski',
+# 'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean',
+# 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule', 'wminkowski', 'haversine']
+
 class GAS(Matcher):
 
-    def __init__(self,X=None,Y=None,f=None):
-        Matcher.__init__(self,X,Y,f)
+    def __init__(self,X=None,Y=None,f=None,measure=None):
+        Matcher.__init__(self,X,Y,f,measure)
+        # measure can be a string - for both nodes and edges attributes
+        if isinstance(self.measure, str):
+            self.metricNode = self.metricEdge = self.measure
+        # or a list of two strings
+        elif isinstance(self.measure, list):
+            self.metricNode = self.measure[0]
+            self.metricEdge = self.measure[1]
+        # or a measure defined in a proper way in the distance folder
+        else:
+            # if sklearn has already it implemented
+            if self.measure.get_Instance() in _VALID_METRICS:
+                self.metricNode = self.metricEdge = self.measure.get_Instance()
+            # if the measure is really user-defined
+            else:
+                self.metricNode = self.measure.node_dis
+                self.metricEdge = self.measure.edge_dis
         self.name="Gaaaaaaas!"
         
     
     # The match function: this function find the best match among the equivalent classes
-    def match(self,X,Y):
+    # storeDistance is a boolean: if True, the value of the minimized objective function
+    #                             is stored (in self.distance)
+    def match(self,X,Y,storeDistance=False):
         # Take the two graphs - they have already the same size
         self.X = X
         self.Y = Y
@@ -43,7 +67,8 @@ class GAS(Matcher):
         x_vec_n = self.X.to_vector_with_select_nodes(isetn)
         y_vec_n = self.Y.to_vector_with_select_nodes(isetn)
         gas_n = pd.DataFrame(pairwise_distances(x_vec_n,
-                                                y_vec_n),
+                                                y_vec_n,
+                                                metric=self.metricNode),
                              columns=y_vec_n.index,
                              index=x_vec_n.index)
         del x_vec_n, y_vec_n
@@ -52,7 +77,8 @@ class GAS(Matcher):
         x_vec_e = self.X.to_vector_with_select_edges(isete)
         y_vec_e = self.Y.to_vector_with_select_edges(isete)
         gas_e = pd.DataFrame(pairwise_distances(x_vec_e,
-                                                y_vec_e),
+                                                y_vec_e,
+                                                metric=self.metricEdge),
                              columns=y_vec_e.index,
                              index=x_vec_e.index)
         del x_vec_e, y_vec_e
@@ -94,6 +120,8 @@ class GAS(Matcher):
         opt_model.minimize(objective)
         # Finding the minimum
         opt_model.solve()
+        if storeDistance:
+            self.distance = opt_model.solution.get_objective_value()
 
         # Save in f the permutation: <3
         ff = [k for k, z in x_vars.items() if z.solution_value == 1]
@@ -111,6 +139,21 @@ class GAS(Matcher):
         del gas_n, gas_e
 
         # <3
- 
-            
+
+    # Computing distance between two graph
+    # NOTE: overwrite the matcher method, since computing the match gives us directly the result
+    def the_dis(self,X,Y):
+        # match gives back the best combination of nodes
+        self.the_grow_and_set(X,Y)
+        aX=copy.deepcopy(self.X)
+        aY=copy.deepcopy(self.Y)
+        self.match(aX,aY,storeDistance=True)
+        return self.distance
+
+    # Computing similarity between two graph
+    # NOTE: if, in the instantiation, measure is a string, the_sim does not work
+    def the_sim(self,X,Y):
+        assert (not isinstance(self.measure, str) or not isinstance(self.measure, list)), "not implemented: \
+        change distance \n distance must be a distance object with node_sim and edge_sim methods"
+        return Matcher.the_sim(self,X,Y)
 

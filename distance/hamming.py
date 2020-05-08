@@ -1,5 +1,6 @@
 from distance import distance
 import scipy.spatial.distance
+import numpy as np
 from abc import ABCMeta, abstractmethod
 import math
 
@@ -12,11 +13,23 @@ class hamming(distance):
     # @staticmethod
     def the_dis(self, x, y):
         # two integer
-        if (not isinstance(x, list) and not isinstance(y, list)):
+        if np.ndim(x)==0 and np.ndim(y)==0:
             _dis = scipy.spatial.distance.hamming(x,y)
             return _dis
+        # One list one integer
+        elif isinstance(x, list) and np.ndim(y)==0:
+            n = len(x)
+            y = [y] + [0] * (n - 1)
+            _dis = scipy.spatial.distance.hamming(y, x)
+            return _dis
+        # One list one integer
+        elif isinstance(y, list) and np.ndim(x)==0:
+            n = len(y)
+            x = [x] + [0] * (n - 1)
+            _dis = scipy.spatial.distance.hamming(y, x)
+            return _dis
         # two lists
-        if (isinstance(x, list) and isinstance(y, list)):
+        elif (isinstance(x, list) and isinstance(y, list)):
             nx = len(x)
             ny = len(y)
             # both null
@@ -40,18 +53,12 @@ class hamming(distance):
 
                     _dis = scipy.spatial.distance.hamming(y,x)
                     return _dis
-        # One list one integer
-        if (isinstance(x, list) and not isinstance(y, list)):
-            n = len(x)
-            y = [y] + [0] * (n - 1)
+        # two arrays (as rows/columns of pd.DataFrame) of equal length (as in GAS):
+        else:
             _dis = scipy.spatial.distance.hamming(y,x)
-            return _dis
-        # One list one integer
-        if (not isinstance(x, list) and isinstance(y, list)):
-            n = len(y)
-            x = [x] + [0] * (n - 1)
-            _dis = scipy.spatial.distance.hamming(y,x)
-            return _dis
+        return _dis
+
+
 
     def node_dis(self, x, y):
         return self.the_dis(x, y)
@@ -59,5 +66,5 @@ class hamming(distance):
     def edge_dis(self, x, y):
         return self.the_dis(x, y)
 
-    def get_Instance(self, name):
-        return 'Hamming'
+    def get_Instance(self):
+        return 'hamming'
