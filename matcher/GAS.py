@@ -1,6 +1,5 @@
 import pandas as pd
 from matcher import Matcher
-from core import GraphSet
 import docplex.mp.model as cpx
 from sklearn.metrics.pairwise import pairwise_distances, _VALID_METRICS
 import copy
@@ -21,8 +20,8 @@ import copy
 
 class GAS(Matcher):
 
-    def __init__(self,X=None,Y=None,f=None,measure=None):
-        Matcher.__init__(self,X,Y,f,measure)
+    def __init__(self, X=None, Y=None, f=None, measure=None):
+        Matcher.__init__(self, X, Y, f, measure)
         # measure can be a string - for both nodes and edges attributes
         if isinstance(self.measure, str):
             self.metricNode = self.metricEdge = self.measure
@@ -39,13 +38,12 @@ class GAS(Matcher):
             else:
                 self.metricNode = self.measure.node_dis
                 self.metricEdge = self.measure.edge_dis
-        self.name="Gaaaaaaas!"
-        
-    
+        self.name = "Gaaaaaaas!"
+
     # The match function: this function find the best match among the equivalent classes
     # storeDistance is a boolean: if True, the value of the minimized objective function
     #                             is stored (in self.distance)
-    def match(self,X,Y,storeDistance=False):
+    def match(self, X, Y, storeDistance=False):
         # Take the two graphs - they have already the same size
         self.X = X
         self.Y = Y
@@ -62,8 +60,8 @@ class GAS(Matcher):
         # set of edges btw non-zero nodes that are in X or in Y
         isete = [(i, j) for i in isetnn for j in isetnn if i != j]
 
-        ## building up the matrix of pairwise distances:
-        # building up the matrix of pairwise distances btw nodes:
+        # building up the matrix of pairwise distances:
+        #   matrix of pairwise distances btw nodes:
         x_vec_n = self.X.to_vector_with_select_nodes(isetn)
         y_vec_n = self.Y.to_vector_with_select_nodes(isetn)
         gas_n = pd.DataFrame(pairwise_distances(x_vec_n,
@@ -73,7 +71,7 @@ class GAS(Matcher):
                              index=x_vec_n.index)
         del x_vec_n, y_vec_n
 
-        # building up the matrix of pairwise distances btw edges:
+        #   matrix of pairwise distances btw edges:
         x_vec_e = self.X.to_vector_with_select_edges(isete)
         y_vec_e = self.Y.to_vector_with_select_edges(isete)
         gas_e = pd.DataFrame(pairwise_distances(x_vec_e,
@@ -82,12 +80,11 @@ class GAS(Matcher):
                              columns=y_vec_e.index,
                              index=x_vec_e.index)
         del x_vec_e, y_vec_e
-        
-               
+
         # optimization model:
         # initialize the model
         # opt_model = cpx.Model(name="HP Model")
-        opt_model = cpx.Model(name="HP Model", ignore_names=True, checker='off') # faster
+        opt_model = cpx.Model(name="HP Model", ignore_names=True, checker='off')  # faster
 
         # list of binary variables: 1 if i match j, 0 otherwise
         # x_vars is n x n
@@ -96,7 +93,6 @@ class GAS(Matcher):
         #           for u in isetnn}
         x_vars = opt_model.binary_var_matrix(isetnn, isetnn, name="x")
 
-        
         # constraints - imposing that there is a one to one correspondence between the nodes in the two networks
         opt_model.add_constraints_((opt_model.sum(x_vars[i, u] for i in isetnn) == 1
                                     for u in isetnn),
@@ -142,18 +138,17 @@ class GAS(Matcher):
 
     # Computing distance between two graph
     # NOTE: overwrite the matcher method, since computing the match gives us directly the result
-    def the_dis(self,X,Y):
+    def the_dis(self, X, Y):
         # match gives back the best combination of nodes
-        self.the_grow_and_set(X,Y)
-        aX=copy.deepcopy(self.X)
-        aY=copy.deepcopy(self.Y)
-        self.match(aX,aY,storeDistance=True)
+        self.the_grow_and_set(X, Y)
+        aX = copy.deepcopy(self.X)
+        aY = copy.deepcopy(self.Y)
+        self.match(aX, aY, storeDistance=True)
         return self.distance
 
     # Computing similarity between two graph
     # NOTE: if, in the instantiation, measure is a string, the_sim does not work
-    def the_sim(self,X,Y):
+    def the_sim(self, X, Y):
         assert (not isinstance(self.measure, str) or not isinstance(self.measure, list)), "not implemented: \
         change distance \n distance must be a distance object with node_sim and edge_sim methods"
-        return Matcher.the_sim(self,X,Y)
-
+        return Matcher.the_sim(self, X, Y)
