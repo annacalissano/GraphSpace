@@ -100,19 +100,19 @@ class GAS(Matcher):
         # constraints - imposing that there is a one to one correspondence between the nodes in the two networks
         opt_model.add_constraints_((opt_model.sum(x_vars[i, u] for i in isetnn) == 1
                                     for u in isetnn),
-                                   ("constraint_r{0}".format(u) for u in isetnn))
+                                   (f"constraint_r{u}" for u in isetnn))
 
         opt_model.add_constraints_((opt_model.sum(x_vars[i, u] for u in isetnn) == 1
                                     for i in isetnn),
-                                   ("constraint_c{0}".format(i) for i in isetnn))
+                                   (f"constraint_c{i}" for i in isetnn))
 
         # objective function - sum the distance between nodes and the distance between edges
         # e.g. (i,i) is a node in X, (u,u) is a node in Y, (i,j) is an edge in X, (u,v) is an edge in Y.
-        objective = opt_model.sum(x_vars[i, u] * gas_n.loc['({0}, {0})'.format(i), '({0}, {0})'.format(u)]
+        objective = opt_model.sum(x_vars[i, u] * gas_n.loc[f'({i}, {i})', f'({u}, {u})']
                                   for i in isetnn
                                   for u in isetnn) + opt_model.sum(
-            x_vars[i, u] * x_vars[j, v] * gas_e.loc['({0}, {1})'.format(i, j),
-                                                    '({0}, {1})'.format(u, v)]
+            x_vars[i, u] * x_vars[j, v] * gas_e.loc[f'({i}, {j})',
+                                                    f'({u}, {v})']
             for (i, j) in isete   # for i in isetnn for j in isetnn if j!=i
             for (u, v) in isete)  # for u in isetnn for v in isetnn if v!=u
 
