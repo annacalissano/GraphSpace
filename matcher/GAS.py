@@ -74,11 +74,16 @@ class GAS(Matcher):
         #   matrix of pairwise distances btw edges:
         x_vec_e = self.X.to_vector_with_select_edges(isete)
         y_vec_e = self.Y.to_vector_with_select_edges(isete)
-        gas_e = pd.DataFrame(pairwise_distances(x_vec_e,
-                                                y_vec_e,
-                                                metric=self.metricEdge),
-                             columns=y_vec_e.index,
-                             index=x_vec_e.index)
+        if self.X.edge_attr == 0 or self.Y.edge_attr == 0:
+            gas_e = pd.DataFrame(0.0,
+                                 columns=y_vec_e.index,
+                                 index=x_vec_e.index)
+        else:
+            gas_e = pd.DataFrame(pairwise_distances(x_vec_e,
+                                                    y_vec_e,
+                                                    metric=self.metricEdge),
+                                 columns=y_vec_e.index,
+                                 index=x_vec_e.index)
         del x_vec_e, y_vec_e
 
         # optimization model:
