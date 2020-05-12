@@ -257,4 +257,48 @@ class mean_aac(aligncompute):
         self.conformal = self.conformal.dropna(axis=1, how='any')  # or [0, 0] instead?
 
 
+class mean_aac_pred(mean_aac):
+
+    def __init__(self, graphset, matcher, propTraining=0.7):
+        # training and calibration sets
+        n = graphset.size()
+        nt = int(np.floor(n * propTraining))
+        idx = np.random.permutation(n)
+        idx_train, idx_cal = idx[:nt], idx[nt:]
+        mean_aac.__init__(self, graphset.sublist(idx_train), matcher)
+        self.X_dev = graphset.sublist(idx_cal)  # is it a copy? no
+        self.aX_dev = copy.deepcopy(self.X_dev)
+        self.conformal = None
+
+    # compute conformal prediction regions
+    def align_est_and_predRegions2(self, alpha=0.1, e=0.00001):
+        # check we are using scalar attributes
+        self.X.get_node_attr()
+        self.X.get_edge_attr()
+        n_a = self.X.node_attr
+        e_a = self.X.edge_attr
+        assert n_a * e_a == 1, "This method assumes that the node or edge attribute is a scalar"
+
+        self.align_and_est()
+        # MU = mu.mean
+        dataSd = pd.Series(self.aX.to_matrix_with_attr().apply(np.std, axis=0))
+
+        for i in range(self.aX_dev.size()):
+            # Align self.aX_dev.X[i] to self.mean
+            # match = GAS()
+            self.matcher.the_grow_and_set(self.aX_dev.X[i], self.mean)
+            self.matcher.match(self.aX_dev.X[i], self.mean)
+            self.aX_dev.X[i].permute(self.matcher.f)
+            # del match
+
+        res = abs(self.aX_dev.to_matrix_with_attr() - self.mean.to_vector_with_attributes().iloc[0])
+        res_norm = res / (dataSd + e)
+        scores = res_norm.max(axis=1)  # L1 norm
+        err = np.quantile(scores, 1 - alpha)
+        erri = err * dataSd  # err in direction i
+
+        self.conformal = (self.mean.to_vector_with_attributes() - erri).append(self.mean.to_vector_with_attributes() + erri)
+        self.conformal.index = ["min", "max"]
+        self.conformal = self.conformal.dropna(axis=1, how='any')  # or [0, 0] instead?
+
 
