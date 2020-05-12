@@ -72,13 +72,7 @@ class GAS(Matcher):
         del x_vec_n, y_vec_n
 
         #   matrix of pairwise distances btw edges:
-        e_a_x = self.X.edge_attr
-        e_a_y = self.Y.edge_attr
-        if e_a_x + e_a_y == 0:      # if both the two graphs have no edge
-            gas_e = pd.DataFrame()
-        else:
-            if e_a_x * e_a_y == 0:  # if one of the two graphs has no edge
-                self.X.edge_attr = self.Y.edge_attr = max(e_a_x, e_a_y)
+        try:
             x_vec_e = self.X.to_vector_with_select_edges(isete)
             y_vec_e = self.Y.to_vector_with_select_edges(isete)
             gas_e = pd.DataFrame(pairwise_distances(x_vec_e,
@@ -87,6 +81,20 @@ class GAS(Matcher):
                                  columns=y_vec_e.index,
                                  index=x_vec_e.index)
             del x_vec_e, y_vec_e
+        except:
+            # degenerate graphs
+            if self.X.edge_attr + self.Y.edge_attr == 0:  # if both the two graphs have no edge
+                gas_e = pd.DataFrame()
+            if self.X.edge_attr * self.Y.edge_attr == 0:  # if one of the two graphs has no edge
+                self.X.edge_attr = self.Y.edge_attr = max(self.X.edge_attr, self.Y.edge_attr)
+                x_vec_e = self.X.to_vector_with_select_edges(isete)
+                y_vec_e = self.Y.to_vector_with_select_edges(isete)
+                gas_e = pd.DataFrame(pairwise_distances(x_vec_e,
+                                                        y_vec_e,
+                                                        metric=self.metricEdge),
+                                     columns=y_vec_e.index,
+                                     index=x_vec_e.index)
+                del x_vec_e, y_vec_e
 
         # optimization model:
         # initialize the model
