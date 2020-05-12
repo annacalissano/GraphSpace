@@ -215,47 +215,6 @@ class mean_aac(aligncompute):
         else:
             print("Sample of graphs is empty")
 
-    # compute conformal prediction regions
-    def align_est_and_predRegions(self, propTraining=0.7, alpha=0.1, e=0.00001):
-        # check we are using scalar attributes
-        self.X.get_node_attr()
-        self.X.get_edge_attr()
-        n_a = self.X.node_attr
-        e_a = self.X.edge_attr
-        assert n_a * e_a == 1, "This method assumes that the node or edge attribute is a scalar"
-
-        # training and calibration sets
-        n = self.X.size()
-        nt = int(np.floor(n * propTraining))
-        idx = np.random.permutation(n)
-        idx_train, idx_cal = idx[:nt], idx[nt:]
-
-        mu = mean_aac(self.aX.sublist(idx_train), self.matcher)
-        mu.align_and_est()
-        MU = mu.mean
-
-        dataSd = pd.Series(mu.aX.to_matrix_with_attr().apply(np.std, axis=0))
-
-        graph_dev = self.aX.sublist(idx_cal)  # is it a copy? no
-        for i in range(graph_dev.size()):
-            # Align graph_dev.X[i] to self.mean
-            # match = GAS()
-            self.matcher.the_grow_and_set(graph_dev.X[i], mu.mean)
-            self.matcher.match(graph_dev.X[i], mu.mean)
-            graph_dev.X[i].permute(self.matcher.f)
-            # del match
-        data_dev = graph_dev.to_matrix_with_attr()
-
-        res = abs(data_dev - MU.to_vector_with_attributes().iloc[0])  # MU.to_vect.. is a dataFrame
-        res_norm = res / (dataSd + e)
-        scores = res_norm.max(axis=1)  # L1 norm
-        err = np.quantile(scores, 1 - alpha)
-        erri = err * dataSd  # err in direction i
-
-        self.conformal = (MU.to_vector_with_attributes() - erri).append(MU.to_vector_with_attributes() + erri)
-        self.conformal.index = ["min", "max"]
-        self.conformal = self.conformal.dropna(axis=1, how='any')  # or [0, 0] instead?
-
 
 class mean_aac_pred(mean_aac):
 
@@ -271,7 +230,7 @@ class mean_aac_pred(mean_aac):
         self.conformal = None
 
     # compute conformal prediction regions
-    def align_est_and_predRegions2(self, alpha=0.1, e=0.00001):
+    def align_est_and_predRegions(self, alpha=0.1, e=0.00001):
         # check we are using scalar attributes
         self.X.get_node_attr()
         self.X.get_edge_attr()

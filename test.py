@@ -227,10 +227,6 @@ for j in range(10):
     Y.add(Graph(x=x0, y=None, adj=None))
 
 match = GAS()
-mu = mean_aac(Y, match)
-mu.align_est_and_predRegions()
-mu.conformal
-
 mu_pred = mean_aac_pred(Y, match)
-mu_pred.align_est_and_predRegions2()
+mu_pred.align_est_and_predRegions()
 mu_pred.conformal
