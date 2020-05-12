@@ -8,7 +8,7 @@ sys.path.append("C:\\Users\\Anna\\OneDrive - Politecnico di Milano\\Windows\\Pol
 from core import Graph, GraphSet, Mean, MeanIterative
 from distance import euclidean
 from matcher import GA, ID
-from AlignCompute import mean_aac, gpc_aac
+from AlignCompute import mean_aac, gpc_aac, mean_aac_pred
 
 from core import Graph
 from core import GraphSet
@@ -207,3 +207,30 @@ print(r.network_coef.x)
 Y_test=G.X[1]
 x_new=pd.DataFrame(data=[float(Y_test.y)])
 r.predict(x_new)
+
+# Prediction Bands:
+
+Y = GraphSet(graph_type='directed')
+for j in range(190):
+    x0 = {}
+    i0 = np.random.binomial(n=1,p=0.4)
+    x0[0,0] = [1]
+    x0[1,1] = [1]
+    x0[i0,(1-i0)] = [np.random.normal(loc=20, scale=3)]
+    Y.add(Graph(x=x0, y=None, adj=None))
+for j in range(10):
+    x0 = {}
+    x0[0,0] = [1]
+    x0[1,1] = [1]
+    x0[0,1] = [np.random.normal(loc=20, scale=3)]
+    x0[1,0] = [np.random.normal(loc=2, scale=0.1)]
+    Y.add(Graph(x=x0, y=None, adj=None))
+
+match = GAS()
+mu = mean_aac(Y, match)
+mu.align_est_and_predRegions()
+mu.conformal
+
+mu_pred = mean_aac_pred(Y, match)
+mu_pred.align_est_and_predRegions2()
+mu_pred.conformal
