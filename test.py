@@ -15,7 +15,7 @@ from core import GraphSet
 from core import Mean
 from core import MeanIterative
 from matcher import Matcher, alignment, GA, ID, GAS, GAS1
-from distance import euclidean,hamming
+from distance import euclidean,hamming,sqeuclidean
 
 import math
 import numpy as np

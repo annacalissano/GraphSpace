@@ -13,6 +13,7 @@ class euclidean(distance):
     
     
     #@staticmethod
+    # Compute the distance between two nodes or two edges.
     def the_dis(self,x,y):
         _dis=0
         # two integer
@@ -59,7 +60,7 @@ class euclidean(distance):
             # ny = len(y)
             for i in range(nx):
                 _dis += math.pow((x[i] - y[i]), 2)
-        return _dis
+        return np.sqrt(_dis)
     
     
     # Compute pointwise product
