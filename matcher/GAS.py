@@ -148,6 +148,7 @@ class GAS(Matcher):
             self.f = [u for (i, u) in ff]
 
         del gas_n, gas_e
+        del opt_model
 
         # <3
 
