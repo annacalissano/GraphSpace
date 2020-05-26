@@ -32,8 +32,9 @@ class mean_aac(aligncompute):
         self.f[first_id] = range(self.X.n_nodes)
         # k=200 maximum number of iteration
         for self.k in range(max_iterations):
-        #    print("iteration: " + str(self.k))
+            print("\n start of iteration: " + str(self.k))
             for i in range(self.X.size()):
+                # print('\t already matched: ' + str(i))
                 # Align X to Y
                 a=self.matcher.align(self.aX.X[i],m_1)
                 # Permutation of X to go closer to Y
@@ -227,7 +228,9 @@ class mean_aac_pred(mean_aac):
         mean_aac.__init__(self, graphset.sublist(idx_train), matcher)
         self.X_dev = graphset.sublist(idx_cal)  # is it a copy? no
         self.aX_dev = copy.deepcopy(self.X_dev)
-        self.conformal = None
+        self.conformal_matrix = None
+        # self.conformal_low = None
+        # self.conformal_up = None
 
     # compute conformal prediction regions
     def align_est_and_predRegions(self, alpha=0.1, e=0.00001):
@@ -238,10 +241,13 @@ class mean_aac_pred(mean_aac):
         e_a = self.X.edge_attr
         assert n_a * e_a == 1, "This method assumes that the node or edge attribute is a scalar"
 
+        print('\n COMPUTING THE MEAN:')
         self.align_and_est()
-        # MU = mu.mean
+        print('\n MEAN COMPUTED!')
+
         dataSd = pd.Series(self.aX.to_matrix_with_attr().apply(np.std, axis=0))
 
+        print('\n Aligning calibration set')
         for i in range(self.aX_dev.size()):
             # Align self.aX_dev.X[i] to self.mean
             # match = GAS()
@@ -250,14 +256,19 @@ class mean_aac_pred(mean_aac):
             self.aX_dev.X[i].permute(self.matcher.f)
             # del match
 
+        print('\n Computing residuals')
         res = abs(self.aX_dev.to_matrix_with_attr() - self.mean.to_vector_with_attributes().iloc[0])
         res_norm = res / (dataSd + e)
         scores = res_norm.max(axis=1)  # L1 norm
         err = np.quantile(scores, 1 - alpha)
         erri = err * dataSd  # err in direction i
 
-        self.conformal = (self.mean.to_vector_with_attributes() - erri).append(self.mean.to_vector_with_attributes() + erri)
-        self.conformal.index = ["min", "max"]
-        self.conformal = self.conformal.dropna(axis=1, how='any')  # or [0, 0] instead?
+        print('\n Computing prediction regions')
+        self.conformal_matrix = (self.mean.to_vector_with_attributes() - erri).append(self.mean.to_vector_with_attributes() + erri)
+        self.conformal_matrix.index = ["min", "max"]
+        self.conformal_matrix = self.conformal_matrix.dropna(axis=1, how='any')  # or [0, 0] instead?
 
+        # TODO Save prediction regions as graphs (and not just as a matrix)
+        # self.conformal_low = Graph(x={y: [x] for x in self.conformal_matrix.iloc[0,] for y in self.conformal_matrix.columns},
+        #                            y=None, adj=None) # NOT WORKING: columns contains strings :(
 
