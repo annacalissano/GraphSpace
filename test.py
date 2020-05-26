@@ -229,4 +229,4 @@ for j in range(10):
 match = GAS()
 mu_pred = mean_aac_pred(Y, match)
 mu_pred.align_est_and_predRegions()
-mu_pred.conformal
+mu_pred.conformal_matrix
