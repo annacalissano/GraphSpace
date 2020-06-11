@@ -121,12 +121,12 @@ X.read_from_text("Dataset.txt")
 
 # Compute the euclidean distance with or without matching between two graphs
 # Identity matching
-match = ID(euclidean())
+match = ID(sqeuclidean())
 match.dis(G.X[0], G.X[1])
 
 # Matching Function - GA or GAS:
-match = GA(euclidean())
-match.dis(G.X[0], G.X[1])
+match = GAS(sqeuclidean())
+match.dis(G.X[1], G.X[2])
 # to see the matching transformation:
 print(match.f)
 del match
