@@ -26,7 +26,7 @@ class GraphSet:
         else:
             self.g_type=str(graph_type)
         print("You have just initialized an "+ str(self.g_type)+" GraphSets")
-        self.y='label'
+        self.s='features'
         self.node_attr='number'
         self.edge_attr='number'
 
@@ -55,11 +55,11 @@ class GraphSet:
     # ClassLabel: get the class label of a graph
     # input:
     # -i: graph index
-    def ClassLabel(self,i):
+    def Features(self,i):
         if(i<0 or len(self.X)<=i):
             print("Hi! Give me a correct index of graph so I can tell you its label.")
         else:
-            return self.X[i].ClassLabel()
+            return self.X[i].Features()
         
     # Create a deep copy of the graphs set
     def cp(self):
@@ -100,121 +100,126 @@ class GraphSet:
     # Write to text file a GraphSet
     # input:
     # - filename: the .txt filename to read
-    def write_to_text(self,filename,ignore_warning=False):
+    def write_to_text(self, filename, ignore_warning=False):
         if not ignore_warning:
             print("have you defined properly your graphSet?")
             print("if your graphs are directed, be sure that graph_type has been correctly specified")
             print("otherwise it won't be read properly")
-        fh = open(filename,"w")
-        i=0
+        fh = open(filename, "w")
+        i = 0
 
-        fh.writelines("GraphSet"+" "+str(self.size())+'\n')
+        fh.writelines("GraphSet" + " " + str(self.size()) + '\n')
         # Write down if the graph is directed or undirected
         fh.writelines("GRAPH_TYPE" + " " + str(self.g_type) + '\n')
-        i=next(k for k in range(self.size()) if self.X[k].edge_attr!=0)
-        if(self.X[i].node_attr>=2):
-            n_at=type(self.X[i].x[self.X[i].nodes_list()[0]][0]).__name__
+        i = next(k for k in range(self.size()) if self.X[k].edge_attr != 0)
+        if (self.X[i].node_attr >= 2):
+            n_at = type(self.X[i].x[self.X[i].nodes_list()[0]][0]).__name__
         else:
-            #n_at='list'
-            n_at=type(self.X[i].x[self.X[i].nodes_list()[0]]).__name__
-        if(self.X[i].edge_attr>=2):
-            e_at=type(self.X[i].x[self.X[i].edges_list()[0]][0]).__name__
-        elif(self.X[i].edge_attr>0):
-            e_at=type(self.X[i].x[self.X[i].edges_list()[0]]).__name__
-        fh.writelines("NODE_ATTR"+' '+' '.join([n_at for i in range(self.X[i].node_attr)])+'\n')
-        fh.writelines("EDGE_ATTR"+' '+' '.join([e_at for i in range(self.X[i].edge_attr)])+'\n')
-        fh.writelines("LABELS"+' '+type(self.X[0].y).__name__+'\n')
-        
+            # n_at='list'
+            n_at = type(self.X[i].x[self.X[i].nodes_list()[0]]).__name__
+        if (self.X[i].edge_attr >= 2):
+            e_at = type(self.X[i].x[self.X[i].edges_list()[0]][0]).__name__
+        elif (self.X[i].edge_attr > 0):
+            e_at = type(self.X[i].x[self.X[i].edges_list()[0]]).__name__
+        fh.writelines("NODE_ATTR" + ' ' + ' '.join([n_at for i in range(self.X[i].node_attr)]) + '\n')
+        fh.writelines("EDGE_ATTR" + ' ' + ' '.join([e_at for i in range(self.X[i].edge_attr)]) + '\n')
+        fh.writelines("FEATURES" + ' ' + type(self.X[0].s).__name__ + '\n')
+
         for i in range(self.size()):
-            n_attr=len(self.X[i].x)
-            n_nodes=len(self.X[i].adj)
-            fh.writelines("Graph"+" "+str(i)+" "+str(n_attr+n_nodes+2)+" "+'Label'+' '+str(self.X[i].y)+'\n') 
-            fh.writelines("Attributes Dictionary"+" "+str(n_attr)+'\n') 
-            for k,v in self.X[i].x.items():
-                fh.write(" ".join(str(x) for x in k)+" "+" ".join(str(x) for x in v)+'\n')
-            fh.writelines("Adjency List"+" "+str(n_nodes)+'\n') 
-            for k,v in self.X[i].adj.items():
-                fh.write(str(k)+" "+" ".join(str(x) for x in v)+'\n')
-            #fh.write('End'+'\n')
-            #fh.write('\n')
-    
+            n_attr = len(self.X[i].x)
+            n_nodes = len(self.X[i].adj)
+            fh.writelines("Graph" + " " + str(i) + " " + str(n_attr + n_nodes + 2) + " " + 'Features' + ' ' + str(
+                self.X[i].s) + '\n')
+            fh.writelines("Attributes Dictionary" + " " + str(n_attr) + '\n')
+            for k, v in self.X[i].x.items():
+                fh.write(" ".join(str(x) for x in k) + " " + " ".join(str(x) for x in v) + '\n')
+            fh.writelines("Adjency List" + " " + str(n_nodes) + '\n')
+            for k, v in self.X[i].adj.items():
+                fh.write(str(k) + " " + " ".join(str(x) for x in v) + '\n')
+            # fh.write('End'+'\n')
+            # fh.write('\n')
+
         fh.close()
-    
+
     # Read from text file a GraphSet (read the output of the write_to_text file)
     # input:
     # - filename: the .txt filename to read
-    def read_from_text(self,filename):
-        fh = open(filename,"r")
+    def read_from_text(self, filename):
+        fh = open(filename, "r")
         for l in fh:
-            n=0
-            #process(l)
+            n = 0
+            # process(l)
             g = l.split()
-            
+
             if not g:
                 continue
-            #g=l.split()
+            # g=l.split()
             else:
-                if(g[0]=='GraphSet'):
+                if (g[0] == 'GraphSet'):
                     print('Start Parsing')
                     continue
-                if(g[0]=='GRAPH_TYPE'):
-                    graph_type=g[1]
-                    self.g_type=graph_type
+                if (g[0] == 'GRAPH_TYPE'):
+                    graph_type = g[1]
+                    self.g_type = graph_type
                     continue
-                if(g[0]=='LABELS'):
-                    type_y=g[1]
+                if (g[0] == 'LABELS'):
+                    type_y = g[1]
                     continue
-                if(g[0]=='NODE_ATTR'):
-                    n_attr=len(g)-1
+                if (g[0] == 'FEATURES'):
+                    type_y = g[1]
                     continue
-                if(g[0]=='EDGE_ATTR'):
-                    e_attr=len(g)-1
-                    
+                if (g[0] == 'NODE_ATTR'):
+                    n_attr = len(g) - 1
                     continue
-                if(g[0]=='Graph'):
-                    
-                    if(int(g[1])==0):
-                        x={}
+                if (g[0] == 'EDGE_ATTR'):
+                    e_attr = len(g) - 1
+
+                    continue
+                if (g[0] == 'Graph'):
+
+                    if (int(g[1]) == 0):
+                        x = {}
                         # first graph need to be estimated
-                        y=g[4]
+                        s = g[4]
                         continue
-                    elif(int(g[1])>0):
+                    elif (int(g[1]) > 0):
                         # estimate
-                        self.add(Graph(x=x,adj=adj,y=y))
-                        x={}
-                        y=g[4]
+                        self.add(Graph(x=x, adj=adj, s=s))
+                        x = {}
+                        s = g[4]
                         continue
-                if(g[0]=='Attributes'):
-                    block='attr'
+                if (g[0] == 'Attributes'):
+                    block = 'attr'
                     continue
-                if(g[0]=='Adjency'):
-                    adj={}
-                    block='adj'
+                if (g[0] == 'Adjency'):
+                    adj = {}
+                    block = 'adj'
                     continue
-                elif(isinstance(int(g[0]),int)):
-                    if(block=='attr'):
-                        if(int(g[0])==int(g[1]) and n_attr>1):
-                            x[int(g[0]),int(g[1])]=list(map(float,g[2:n_attr+2]))
+                elif (isinstance(int(g[0]), int)):
+                    if (block == 'attr'):
+                        if (int(g[0]) == int(g[1]) and n_attr > 1):
+                            x[int(g[0]), int(g[1])] = list(map(float, g[2:n_attr + 2]))
                             continue
-                        if(int(g[0])==int(g[1]) and n_attr==1):
-                            x[int(g[0]),int(g[1])]=[float(g[2])]
-                            
-                        if(int(g[0])!=int(g[1]) and e_attr>1):
-                            x[int(g[0]),int(g[1])]=list(map(float,g[2:e_attr+2]))
-                            if(graph_type=='undirected'):
-                                x[int(g[1]),int(g[0])]=x[int(g[0]),int(g[1])]
-                            continue
-                        if(int(g[0])!=int(g[1]) and e_attr==1):
-                            x[int(g[0]),int(g[1])]=[float(g[2])]
+                        if (int(g[0]) == int(g[1]) and n_attr == 1):
+                            x[int(g[0]), int(g[1])] = [float(g[2])]
+
+                        if (int(g[0]) != int(g[1]) and e_attr > 1):
+                            x[int(g[0]), int(g[1])] = list(map(float, g[2:e_attr + 2]))
                             if (graph_type == 'undirected'):
-                                x[int(g[1]),int(g[0])]=x[int(g[0]),int(g[1])]
+                                x[int(g[1]), int(g[0])] = x[int(g[0]), int(g[1])]
+                            continue
+                        if (int(g[0]) != int(g[1]) and e_attr == 1):
+                            x[int(g[0]), int(g[1])] = [float(g[2])]
+                            if (graph_type == 'undirected'):
+                                x[int(g[1]), int(g[0])] = x[int(g[0]), int(g[1])]
                             continue
                         continue
-                    if(block=='adj'):
-                        adj[int(g[0])]=list(map(int,g[1:len(g)]))
+                    if (block == 'adj'):
+                        adj[int(g[0])] = list(map(int, g[1:len(g)]))
                         continue
-                else: continue
-        self.add(Graph(x=x,adj=adj,y=y))
+                else:
+                    continue
+        self.add(Graph(x=x, adj=adj, s=s))
         print("End Parsing")
 
     
@@ -256,10 +261,10 @@ class GraphSet:
                 if(g[0]=='EDGES'):
                     block='e'
                     continue
-                if(g[0]=='LABEL'):
-                    y=g[1]
+                if(g[0]=='FEATURES'):
+                    s=g[1]
                 if(g[0]=='#'):
-                    self.add(Graph(x=x,adj=None,y=y))
+                    self.add(Graph(x=x,adj=None,s=s))
                     del x,block
                     continue
                 else:

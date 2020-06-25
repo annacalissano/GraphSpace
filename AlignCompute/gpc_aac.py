@@ -244,7 +244,7 @@ class gpc_aac(aligncompute):
                 elif(not (i,j) in x):
                     #new[fi,fj]=self.summ(ax,[0]*len(x[i,j0]),ay,y[fi,fj])
                     new[i,j]=self.summ(ax,None,ay,y[i,j])
-        newG=Graph(x=new,y=None,adj=None)
+        newG=Graph(x=new,s=None,adj=None)
         return newG
     
     # Add at y a linear combination of x y=ax*y + ay*x
@@ -323,7 +323,7 @@ class gpc_aac(aligncompute):
             elif(len(ind[i])==2 and not (int(ind[i][0]),int(ind[i][1])) in x_g):
                 x_g[int(ind[i][0]),int(ind[i][1])]=[geo.loc[geo.axes[0][i]]]
         
-        geo_net=Graph(x=x_g,adj=None,y=None)
+        geo_net=Graph(x=x_g,adj=None,s=None)
         return geo_net
 
     def give_me_a_graphset(self,mat,n_a,e_a):

@@ -152,7 +152,7 @@ class mean_aac(aligncompute):
                 elif(not (i,j) in x):
                     #new[fi,fj]=self.summ(ax,[0]*len(x[i,j0]),ay,y[fi,fj])
                     new[i,j]=self.summ(ax,None,ay,y[i,j])
-            newG=Graph(x=new,y=None,adj=None)
+            newG=Graph(x=new,s=None,adj=None)
         return newG
     
     # Add at y a linear combination of x y=ax*y + ay*x
@@ -270,5 +270,5 @@ class mean_aac_pred(mean_aac):
 
         # TODO Save prediction regions as graphs (and not just as a matrix)
         # self.conformal_low = Graph(x={y: [x] for x in self.conformal_matrix.iloc[0,] for y in self.conformal_matrix.columns},
-        #                            y=None, adj=None) # NOT WORKING: columns contains strings :(
+        #                            s=None, adj=None) # NOT WORKING: columns contains strings :(
 

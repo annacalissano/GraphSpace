@@ -56,8 +56,8 @@ x2[3, 4] = [1]
 x2[4, 3] = [1]
 # Create Graph set:
 G = GraphSet(graph_type='directed')
-G.add(Graph(x=x1, y=None, adj=None))
-G.add(Graph(x=x2, y=None, adj=None))
+G.add(Graph(x=x1, s=None, adj=None))
+G.add(Graph(x=x2, s=None, adj=None))
 
 # Compute a distance with euclidean distance without matching the graphs
 match=ID(hamming())
@@ -111,9 +111,9 @@ x3[4, 3] = [1]
 
 # Create Graph set:
 G = GraphSet(graph_type='directed')
-G.add(Graph(x=x1, y=None, adj=None))
-G.add(Graph(x=x2, y=None, adj=None))
-G.add(Graph(x=x3, y=None, adj=None))
+G.add(Graph(x=x1, s=None, adj=None))
+G.add(Graph(x=x2, s=None, adj=None))
+G.add(Graph(x=x3, s=None, adj=None))
 
 # or import a GraphSet
 X = GraphSet()
@@ -194,7 +194,7 @@ n_train=10
 X_train=G.sublist(list(range(0,n_train)))
 
 # Run GGR:
-r=ggr_aac(X_train,GA(euclidean()))
+r=ggr_aac(X_train,GAS(sqeuclidean()))
 r.align_and_est()
 
 # Proportion of variance explained
@@ -205,10 +205,10 @@ print(r.network_coef.x)
 
 # Prediction:
 Y_test=G.X[1]
-x_new=pd.DataFrame(data=[float(Y_test.y)])
+x_new=pd.DataFrame(data=[float(Y_test.s)])
 r.predict(x_new)
 
-# Prediction Bands:
+# Conformal Prediction Bands:
 
 Y = GraphSet(graph_type='directed')
 for j in range(190):

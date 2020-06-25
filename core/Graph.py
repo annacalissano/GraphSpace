@@ -23,10 +23,10 @@ class Graph:
     # Facultative Input:
     # adj: adjency list with [i] node as [k,l,m] the nodes is linked to as values (if None it is created in definethegraph())
     # y: numeric or categorical variable associated to the 
-    def __init__(self,x,adj,y):
-        if(y is None):
-            self.y=None
-        else: self.y=y # Class of the network
+    def __init__(self,x,adj,s):
+        if(s is None):
+            self.s=None
+        else: self.s=s # Regressor or class of the network
         # Check on the x: the null nodes should not be in the middle.
         # e.g. [0,1,2] can not have (0,0) (2,2) different from zero and (1,1) zero.
         self.x=copy.deepcopy(x) # nodes and edges attributes
@@ -157,23 +157,23 @@ class Graph:
         return self.adj
     
     # The following three functions deal with the nodel class label if there is one:
-    def ClassLabel(self):
-        if(self.y is None):
-            print ("Missing class label y.")
-        else: return y
+    def Features(self):
+        if(self.s is None):
+            print ("Missing attribute s.")
+        else: return s
     
     # Class Label assignment
-    def setClassLabel(self,classlabel):
-        self.y=classlabel
+    def setFeatures(self,feature):
+        self.s=feature
     
-    def OutputLabel(self):
-        if(self.y is None):
-            print ("Missing value y.")
-        else: return y   
+    def OutputFeature(self):
+        if(self.s is None):
+            print ("Missing features.")
+        else: return self.s
     
     # Check if it has a label
-    def HasLabel(self):
-        if(self.y is None):
+    def HasFeatures(self):
+        if(self.s is None):
             return False
         else: return True
         
@@ -237,7 +237,7 @@ class Graph:
             for j in range(degree):
                 j0=self.adj[i][j]
                 x_new[i,j0]=list(np.multiply(a,self.x[i,j0]))
-        return Graph(x=x_new,adj=self.adj,y=self.y)        
+        return Graph(x=x_new,adj=self.adj,y=self.s)
                 
     # Permuting indexes of the nodes
     def permutelist(self):
@@ -485,4 +485,4 @@ class Graph:
                 current_id=[(i, j) for j in adj_new[i] if j in id]
                 adj_new[i]=[n for n in adj_new[i] if n not in id]
                 for key in current_id: del x_new[key]
-        return Graph(x=x_new,adj=adj_new,y=self.y)
+        return Graph(x=x_new,adj=adj_new,y=self.s)

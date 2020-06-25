@@ -51,7 +51,7 @@ class ggr_aac(aligncompute):
         # Regression error for each iteration and each observation
         self.regression_error={}#pd.DataFrame(0,index=range(graphset.size()), columns=range(self.nr_iterations))
         self.postalignment_error = {}#pd.DataFrame(0,index=range(graphset.size()), columns=range(self.nr_iterations))
-
+        self.f_iteration={}
 
     def align_and_est(self):
         # INITIALIZATION:
@@ -197,11 +197,12 @@ class ggr_aac(aligncompute):
     # Compute the generalized geodesic regression on the total space as a regression of the aligned graph set
     def est(self,k):
         # Step 1: Create the current permuted dataset
+        self.f_iteration[k]=self.f
         G_per=GraphSet()
         for i in range(self.aX.size()):
             G_temp=copy.deepcopy(self.aX.X[i])
             G_temp.permute(self.f[i])
-            G_temp.y=copy.deepcopy(self.aX.X[i].y)
+            G_temp.s=copy.deepcopy(self.aX.X[i].s)
             G_per.add(G_temp)
             del(G_temp)
         del(self.aX)
@@ -216,7 +217,7 @@ class ggr_aac(aligncompute):
         # Create the input value
         t = []
         for i in range(y.shape[0]):
-            t += [float(G_per.X[i].y)]
+            t += [float(G_per.X[i].s)]
         x = pd.DataFrame(data=t, index=y.index)
         self.regressor=x
         # Step 4: fit the chosen regression model
@@ -279,7 +280,7 @@ class ggr_aac(aligncompute):
     
     # geo is a pd Series
     # n_a and e_a are nodes and edges attributes
-    def give_me_a_network(self,geo,n_a,e_a,y=None):
+    def give_me_a_network(self,geo,n_a,e_a,s=None):
         ind=[re.findall(r'-?\d+\.?\d*', k) for k in geo.axes[0]]
         x_g={}
         for i in range(len(ind)):
@@ -290,7 +291,7 @@ class ggr_aac(aligncompute):
             elif(len(ind[i])==2 and not (int(ind[i][0]),int(ind[i][1])) in x_g):
                 x_g[int(ind[i][0]),int(ind[i][1])]=[geo.loc[geo.axes[0][i]]]
         
-        geo_net=Graph(x=x_g,adj=None,y=y)
+        geo_net=Graph(x=x_g,adj=None,s=s)
         return geo_net
 
 
@@ -298,7 +299,7 @@ class ggr_aac(aligncompute):
     def align_est_and_predRegions(self,alpha,):
         # Divide training and test
         # save the training in aX
-        # X.y you can find the regressors
+        # X.s you can find the regressors
         # self.est and self.align_pred are the two function for the estimation of the coefficients
         # you can extract the coefficient as self.network_coef  (graphset)
         # you can extract the s
