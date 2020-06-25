@@ -56,8 +56,8 @@ x2[3, 4] = [1]
 x2[4, 3] = [1]
 # Create Graph set:
 G = GraphSet(graph_type='directed')
-G.add(Graph(x=x1, s=None, adj=None))
-G.add(Graph(x=x2, s=None, adj=None))
+G.add(Graph(x=x1, s=[1,2], adj=None))
+G.add(Graph(x=x2, s=[2,3], adj=None))
 
 # Compute a distance with euclidean distance without matching the graphs
 match=ID(hamming())

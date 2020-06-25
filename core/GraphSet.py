@@ -3,7 +3,7 @@ import pandas as pd
 from scipy.sparse import lil_matrix,vstack
 import copy
 from core import Graph
-
+import string
 # GraphSet: object graphset, i.e. create a dataset of graphs
 # X: list of graphs
 # g_type: 'undirected' or 'directed'
@@ -145,6 +145,8 @@ class GraphSet:
     # input:
     # - filename: the .txt filename to read
     def read_from_text(self, filename):
+        remove = string.punctuation
+        remove.replace(".", " ")
         fh = open(filename, "r")
         for l in fh:
             n = 0
@@ -180,13 +182,16 @@ class GraphSet:
                     if (int(g[1]) == 0):
                         x = {}
                         # first graph need to be estimated
-                        s = g[4]
+                        s = [d.translate({ord('['): None}).translate({ord(','): None}).translate({ord(']'): None}) for d
+                             in
+                             g[4:len(g)]]
                         continue
                     elif (int(g[1]) > 0):
                         # estimate
                         self.add(Graph(x=x, adj=adj, s=s))
                         x = {}
-                        s = g[4]
+                        s=[d.translate({ord('['): None}).translate({ord(','): None}).translate({ord(']'): None}) for d in
+                         g[4:len(g)]]
                         continue
                 if (g[0] == 'Attributes'):
                     block = 'attr'
