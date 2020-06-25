@@ -47,7 +47,7 @@ class Mean:
                     # go along the geodesic of a step 1/k
                     self.m_C=a.add(1.0/(i+1.0),i/(i+1.0))
                     del a
-                self.m_C.setClassLabel(0)
+                self.m_C.setFeatures(0)
                 return self.m_C
             else: return None
 

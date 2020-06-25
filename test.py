@@ -8,7 +8,7 @@ sys.path.append("C:\\Users\\Anna\\OneDrive - Politecnico di Milano\\Windows\\Pol
 from core import Graph, GraphSet, Mean, MeanIterative
 from distance import euclidean
 from matcher import GA, ID
-from AlignCompute import mean_aac, gpc_aac, mean_aac_pred
+from AlignCompute import mean_aac, gpc_aac, mean_aac_pred,ggr_aac
 
 from core import Graph
 from core import GraphSet
@@ -123,6 +123,8 @@ X.read_from_text("Dataset.txt")
 # Identity matching
 match = ID(sqeuclidean())
 match.dis(G.X[0], G.X[1])
+print(match.f)
+# the identity permutation as expected!
 
 # Matching Function - GA or GAS:
 match = GAS(sqeuclidean())
@@ -131,14 +133,8 @@ match.dis(G.X[1], G.X[2])
 print(match.f)
 del match
 
-match = GAS()   # default: euclidean
-match.dis(G.X[0], G.X[1])
-# to see the matching transformation:
-print(match.f)
-del match
-
 # Compute the mean with the identity matcher
-match = ID(euclidean())
+match = ID(sqeuclidean())
 mu = Mean(G, match)
 MU = mu.mean()
 # to see the result:
@@ -147,7 +143,7 @@ print(MU.x)
 del match, mu, MU
 
 # Align All and Compute Mean with GA matcher
-match = GA(euclidean())
+match = GA(sqeuclidean())
 mu = mean_aac(G, match)
 mu.align_and_est()
 MU = mu.mean
@@ -156,7 +152,7 @@ print(MU.x)
 del match, mu, MU
 
 # Align All and Compute Mean with GAS matcher
-match = GAS()
+match = GAS(sqeuclidean())
 # or equivalently:
 # GAS(euclidean())
 # GAS('euclidean')
@@ -170,7 +166,7 @@ del match, mu, MU
 
 # Align All and Compute GPC
 n_comp=2
-p=gpc_aac(G,GA(euclidean()))
+p=gpc_aac(G,GA(sqeuclidean()))
 p.align_and_est(n_comp,scale=False,s=[0,10])
 
 # To project the data along the i-th GPC you need to:
@@ -194,7 +190,7 @@ n_train=10
 X_train=G.sublist(list(range(0,n_train)))
 
 # Run GGR:
-r=ggr_aac(X_train,GAS(sqeuclidean()))
+r=ggr_aac(X_train,GAS(sqeuclidean()),distance=sqeuclidean())
 r.align_and_est()
 
 # Proportion of variance explained

@@ -94,11 +94,11 @@ class ggr_aac(aligncompute):
                     # self.vector_coef = pd.Series(data=E_2[0].coef_.flatten(), index=self.variables_names)
                     self.network_coef.add(
                         self.give_me_a_network(pd.Series(data=E_2[0].intercept_.flatten(), index=self.variables_names),
-                                               self.aX.node_attr, self.aX.edge_attr, y='Intercept'))
+                                               self.aX.node_attr, self.aX.edge_attr, s='Intercept'))
                     for i_th in range(E_2[0].coef_.shape[1]):
                         self.network_coef.add(
                             self.give_me_a_network(pd.Series(data=E_2[0].coef_[:, i_th], index=self.variables_names),
-                                                   self.aX.node_attr, self.aX.edge_attr, y=str('beta' + str(i_th))))
+                                                   self.aX.node_attr, self.aX.edge_attr, s=str('beta' + str(i_th))))
                     self.regression_error=pd.DataFrame.from_dict({iteration:[
                         self.regression_error[observation,iteration] for observation in range(self.aX.size())] for
                         iteration in range(k+1)})
@@ -120,11 +120,11 @@ class ggr_aac(aligncompute):
                 # Return the coefficients
                 self.network_coef =GraphSet()
                 #self.vector_coef = pd.Series(data=E_2[0].coef_.flatten(), index=self.variables_names)
-                self.network_coef.add(self.give_me_a_network(pd.Series(data=E_2[0].intercept_.flatten(), index=self.variables_names), self.aX.node_attr, self.aX.edge_attr,y='Intercept'))
+                self.network_coef.add(self.give_me_a_network(pd.Series(data=E_2[0].intercept_.flatten(), index=self.variables_names), self.aX.node_attr, self.aX.edge_attr,s='Intercept'))
                 for i_th in range(E_2[0].coef_.shape[1]):
                     self.network_coef.add(
                         self.give_me_a_network(pd.Series(data=E_2[0].coef_[:,i_th], index=self.variables_names),
-                                           self.aX.node_attr, self.aX.edge_attr, y=str('beta'+str(i_th))))
+                                           self.aX.node_attr, self.aX.edge_attr, s=str('beta'+str(i_th))))
                 self.regression_error = pd.DataFrame.from_dict(
                     {iteration: [self.regression_error[observation, iteration] for observation in range(self.aX.size())]
                      for iteration in range(self.nr_iterations)})
@@ -146,11 +146,11 @@ class ggr_aac(aligncompute):
                 # Return the coefficients
                 self.network_coef =GraphSet()
                 #self.vector_coef = pd.Series(data=E_2[0].coef_.flatten(), index=self.variables_names)
-                self.network_coef.add(self.give_me_a_network(pd.Series(data=E_1[0].intercept_.flatten(), index=self.variables_names), self.aX.node_attr, self.aX.edge_attr,y='Intercept'))
+                self.network_coef.add(self.give_me_a_network(pd.Series(data=E_1[0].intercept_.flatten(), index=self.variables_names), self.aX.node_attr, self.aX.edge_attr,s='Intercept'))
                 for i_th in range(E_1[0].coef_.shape[1]):
                     self.network_coef.add(
                         self.give_me_a_network(pd.Series(data=E_1[0].coef_[:,i_th], index=self.variables_names),
-                                           self.aX.node_attr, self.aX.edge_attr, y=str('beta'+str(i_th))))
+                                           self.aX.node_attr, self.aX.edge_attr, s=str('beta'+str(i_th))))
                 self.regression_error = pd.DataFrame.from_dict(
                     {iteration: [self.regression_error[observation, iteration] for observation in range(self.aX.size())]
                      for iteration in range(self.nr_iterations)})
@@ -215,10 +215,9 @@ class ggr_aac(aligncompute):
 
         # Step 3: create the x vector
         # Create the input value
-        t = []
+        x = pd.DataFrame(columns=range(len(G_per.X[0].s)), index=range(y.shape[0]))
         for i in range(y.shape[0]):
-            t += [float(G_per.X[i].s)]
-        x = pd.DataFrame(data=t, index=y.index)
+            x.iloc[i] = [float(regressor) for regressor in G_per.X[i].s]
         self.regressor=x
         # Step 4: fit the chosen regression model
         # Ordinary Least Square
@@ -267,14 +266,14 @@ class ggr_aac(aligncompute):
         self.y_vec_pred=self.model.predict(X=x_new)
         self.y_net_pred=GraphSet()
         for i in range(self.y_vec_pred.shape[0]):
-            self.y_net_pred.add(self.give_me_a_network(geo=pd.Series(data=self.y_vec_pred[i],index=self.variables_names),n_a=self.aX.node_attr,e_a=self.aX.edge_attr,y=float(x_new.loc[i])))
+            self.y_net_pred.add(self.give_me_a_network(geo=pd.Series(data=self.y_vec_pred[i],index=self.variables_names),n_a=self.aX.node_attr,e_a=self.aX.edge_attr,s=float(x_new.loc[i])))
         if(std==True and self.model_type=='GPR'):
             self.y_vec_pred, self.y_std_pred = self.model.predict(X=x_new,return_std=True)
             self.y_net_pred = GraphSet()
             for i in range(self.y_vec_pred.shape[0]):
                 self.y_net_pred.add(
                     self.give_me_a_network(geo=pd.Series(data=self.y_vec_pred[i], index=self.variables_names),
-                                           n_a=self.aX.node_attr, e_a=self.aX.edge_attr, y=float(x_new.loc[i])))
+                                           n_a=self.aX.node_attr, e_a=self.aX.edge_attr, s=float(x_new.loc[i])))
 
     # These functions are auxiliary function to compute the ggr
     
