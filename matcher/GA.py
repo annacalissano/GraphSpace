@@ -49,6 +49,9 @@ class GA(Matcher):
             # swap the two network
             self.swap()
             self.swapped=True
+        if(self.X.nodes==1 and self.Y.nodes==1):
+            self.f=list(self.Y.x.keys())[0][0]
+            return
         # initialize match
         self.initializeMatchMatrix()
         self.setAssociationGraph()

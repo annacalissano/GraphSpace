@@ -20,6 +20,7 @@ class Matcher(object):
         # if is weighted -> weights are an  n*n adjacency matrix as received in input
         self.X=None
         self.Y=None
+        # f represent the permutation of X to get to Y
         self.f=None
 
     # Core method of the Matcher: initialize the best matching permutation of nodes between X and Y

@@ -52,13 +52,16 @@ class ggr_aac(aligncompute):
         self.regression_error={}#pd.DataFrame(0,index=range(graphset.size()), columns=range(self.nr_iterations))
         self.postalignment_error = {}#pd.DataFrame(0,index=range(graphset.size()), columns=range(self.nr_iterations))
         self.f_iteration={}
+        self.f_all = {}
 
     def align_and_est(self):
         # INITIALIZATION:
         # Select a Random Candidate:
         first_id = random.randint(0, self.aX.size() - 1)
         m_1 = self.aX.X[first_id]
-
+        while(m_1.n_nodes==1):
+            first_id = random.randint(0, self.aX.size() - 1)
+            m_1 = self.aX.X[first_id]
         # Sequential version:
         # Align all the points wrt the random candidate
         #for i in range(self.X.size()):
@@ -226,6 +229,7 @@ class ggr_aac(aligncompute):
             model = linear_model.LinearRegression()
             model.fit(x, y)
             along_geo_pred = pd.DataFrame(model.predict(x),columns=self.variables_names)
+            self.f_all[k] = self.f
             #self.regression_error.iloc[:, k] = (along_geo_pred - y).pow(2).sum(axis=1)
             return (model, along_geo_pred)
 

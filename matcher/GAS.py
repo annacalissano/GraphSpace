@@ -45,11 +45,14 @@ class GAS(Matcher):
     #                             is stored (in self.distance)
     def match(self, X, Y, storeDistance=False):
         # Take the two graphs - they have already the same size
+
         self.X = X
         self.Y = Y
-
+        if(self.X.nodes()==1 and self.Y.nodes()==1):
+            print("No Edges")
+            self.f=list(self.Y.x.keys())[0][0]
+            return
         nX = self.X.nodes()
-
         # set of non-zero nodes (i,i) that are in X or in Y
         # note. assuming that if there is an edge (i,j), both i and j have non-zero attribute
         isetn = set((i, j) for ((i, j), y) in self.X.x.items() if y != [0] if i == j).union(
@@ -147,7 +150,11 @@ class GAS(Matcher):
         else:
             self.f = [u for (i, u) in ff]
 
-        del gas_n, gas_e
+        try:
+            del gas_n, gas_e
+        except AttributeError:
+            pass
+
         del opt_model
 
         # <3
@@ -159,6 +166,10 @@ class GAS(Matcher):
         self.the_grow_and_set(X, Y)
         aX = copy.deepcopy(self.X)
         aY = copy.deepcopy(self.Y)
+        if(self.X.nodes()==1 and self.Y.nodes()==1):
+            self.f=list(self.Y.x.keys())[0][0]
+            self.distance=self.measure.node_dis(list(self.X.x.values())[0],list(self.Y.x.values())[0])
+            return self.distance
         self.match(aX, aY, storeDistance=True)
         return self.distance
 
