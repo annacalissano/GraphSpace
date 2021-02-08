@@ -186,11 +186,6 @@ for i in range(len(G_along_GPC4.X)):
     plt.show()
 
 
-
-for i in range(len(G_along_GPC1.X)):
-   print(match1.dis(G_along_GPC1.X[i],G_along_GPC2.X[i]))
-   print(match1dis(G_along_GPC3.X[i],G_along_GPC4.X[i]))
-
 print("SCORES")
 print(gpc_c.scores)
 print(gpc_p.scores)

@@ -14,10 +14,10 @@ from matcher import Matcher
 # ID matchining can be used for labelled framework
 class ID(Matcher):
     
-    def match(self,X,Y,c):
-        if(c==True):
-            return #provvisrio
-            #self.f=matcherc.IDc(X.x,Y.x,True)
+    def match(self,X,Y):
+        if(self.c==True):
+            return 
+            self.f=matcherc.IDc(X.x,Y.x,True)
         else:
             self.X=X
             self.Y=Y
