@@ -115,4 +115,4 @@ class sqeuclidean(distance):
         return self.the_sim(x, y)
 
     def get_Instance(self):
-        return 'euclidean'
+        return 'sqeuclidean'

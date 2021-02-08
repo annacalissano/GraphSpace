@@ -12,87 +12,114 @@ import numpy as np
 import pandas as pd
 import random
 
+import meanc
+
 import copy
 
 
 class mean_aac(aligncompute):
     
-    def __init__(self,graphset,matcher):
+    def __init__(self,graphset,matcher,cm=None):
         aligncompute.__init__(self,graphset,matcher)
         self.mean=None
         self.var=None
         self.m_dis=None
         self.cov=None
+        if(cm==None):
+             self.cm=False
+        else:
+              self.cm=cm
+
     
-    def align_and_est(self, max_iterations=200):
-        # Select a Random Candidate:
-        first_id=random.randint(0,self.aX.size()-1)
-        # first_id = 318
-        m_1=self.aX.X[first_id]
-        self.f[first_id] = range(self.X.n_nodes)
-        # k=200 maximum number of iteration
-        for self.k in range(max_iterations):
-            print("\n start of iteration: " + str(self.k))
-            for i in range(self.X.size()):
-                # print('\t already matched: ' + str(i))
-                # Align X to Y
-                a=self.matcher.align(self.aX.X[i],m_1)
-                # Permutation of X to go closer to Y
-                self.f[i]=a.f
-                #self.aX.X[i]=a.alignedSource()
-                #print m_1.x
-                #print a.alignedSource().x
+    def align_and_est(self, max_iterations):
+        if self.cm==True:
+            if self.X.g_type=='directed':
+                oriented=True
+            else:
+                oriented=False
+            result=meanc.compute(self.X.get_graphset_maps(),oriented,max_iterations,0.01,self.matcher.name)
+            self.mean=Graph(x=result[0], adj=None, s=None)
+            self.f=result[1]
+            for i in range(len(result[2])):
+               self.aX.add(Graph(x=result[2][i],adj=None,s=None))
+            
+        else:
+            # Select a Random Candidate:
+            #first_id=random.randint(0,self.aX.size()-1)
+            first_id = 0
+            m_1=self.aX.X[first_id]
+            self.f[first_id] = range(self.X.n_nodes)
+            # k=200 maximum number of iteration
+            previous_steps=[0,0,0,0,0]
+            for self.k in range(max_iterations):
+                print("\n start of iteration: " + str(self.k))
+                for i in range(self.X.size()):
+                    # print('\t already matched: ' + str(i))
+                    # Align X to Y
+                    a=self.matcher.align(self.aX.X[i],m_1)
+                    #print(a.f)
+                    # Permutation of X to go closer to Y
+                    self.f[i]=a.f
+                    #self.aX.X[i]=a.alignedSource()
+                    #print m_1.x
+                    #print a.alignedSource().x
                 
-            m_2=self.est(m_1)
-            
-            step_range=self.matcher.dis(m_1,m_2)
-            
-            if(step_range<0.001):
+                m_2=self.est(m_1)                
+                
+                step_range=self.matcher.dis(m_1,m_2)
+                
+                print(step_range)
+                
+                if(step_range<0.001 or previous_steps==[step_range, step_range, step_range, step_range, step_range]):
+                    self.mean=m_2
+                    # Update aX with the final permutations:
+                    Aligned=GraphSet()
+                    # Aligned.add(self.aX.X[0])
+                    for i in range(self.X.size()):
+                        G=self.aX.X[i]
+                        G.permute(self.f[i])
+                        Aligned.add(G)
+                        del G
+                    self.aX=copy.deepcopy(Aligned)
+                    del Aligned
+                    print("Step Range smaller than 0.001")
+                    return
+                else: 
+                    del m_1
+                    m_1=m_2
+                    
+                    for i in range(4):
+                        previous_steps[i]=previous_steps[i+1]
+                        previous_steps[4]=step_range
+                    del m_2
+                    #self.f.clear()
+            print("Maximum number of iteration reached.")  
+            if('m_2' in locals()):
                 self.mean=m_2
                 # Update aX with the final permutations:
-                Aligned=GraphSet()
-                # Aligned.add(self.aX.X[0])
+                Aligned = GraphSet()
+                Aligned.add(self.aX.X[0])
                 for i in range(self.X.size()):
-                    G=self.aX.X[i]
+                    G = self.aX.X[i]
                     G.permute(self.f[i])
                     Aligned.add(G)
                     del G
-                self.aX=copy.deepcopy(Aligned)
+                self.aX = copy.deepcopy(Aligned)
                 del Aligned
-                print("Step Range smaller than 0.001")
-                return
+                del m_2,m_1
             else:
+                self.mean=m_1
+                # Update aX with the final permutations:
+                Aligned = GraphSet()
+                Aligned.add(self.aX.X[0])
+                for i in range(1, self.X.size()):
+                    G = self.aX.X[i]
+                    G.permute(self.f[i])
+                    Aligned.add(G)
+                    del G
+                self.aX = copy.deepcopy(Aligned)
+                del Aligned
                 del m_1
-                m_1=m_2
-                del m_2
-                self.f.clear()
-        print("Maximum number of iteration reached.")  
-        if('m_2' in locals()):
-            self.mean=m_2
-            # Update aX with the final permutations:
-            Aligned = GraphSet()
-            Aligned.add(self.aX.X[0])
-            for i in range(self.X.size()):
-                G = self.aX.X[i]
-                G.permute(self.f[i])
-                Aligned.add(G)
-                del G
-            self.aX = copy.deepcopy(Aligned)
-            del Aligned
-            del m_2,m_1
-        else:
-            self.mean=m_1
-            # Update aX with the final permutations:
-            Aligned = GraphSet()
-            Aligned.add(self.aX.X[0])
-            for i in range(1, self.X.size()):
-                G = self.aX.X[i]
-                G.permute(self.f[i])
-                Aligned.add(G)
-                del G
-            self.aX = copy.deepcopy(Aligned)
-            del Aligned
-            del m_1
         
         
             
@@ -152,7 +179,7 @@ class mean_aac(aligncompute):
                 elif(not (i,j) in x):
                     #new[fi,fj]=self.summ(ax,[0]*len(x[i,j0]),ay,y[fi,fj])
                     new[i,j]=self.summ(ax,None,ay,y[i,j])
-            newG=Graph(x=new,y=None,adj=None)
+            newG=Graph(x=new,s=None,adj=None)
         return newG
     
     # Add at y a linear combination of x y=ax*y + ay*x
@@ -270,5 +297,5 @@ class mean_aac_pred(mean_aac):
 
         # TODO Save prediction regions as graphs (and not just as a matrix)
         # self.conformal_low = Graph(x={y: [x] for x in self.conformal_matrix.iloc[0,] for y in self.conformal_matrix.columns},
-        #                            y=None, adj=None) # NOT WORKING: columns contains strings :(
+        #                            s=None, adj=None) # NOT WORKING: columns contains strings :(
 

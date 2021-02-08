@@ -6,6 +6,8 @@ import math
 from munkres import Munkres
 from matcher import Matcher
 from scipy import sparse
+import matcherc
+
 
 # Graduate assigned algorithm
 # author: brijneshjain
@@ -29,101 +31,112 @@ class GA(Matcher):
     # **********************
 
 
-    def __init__(self,X=None,Y=None,f=None):
-        Matcher.__init__(self,X,Y,f)
+    def __init__(self,X=None,Y=None,f=None,c=None):
+        Matcher.__init__(self,X,Y,f,c)
         self.a=None
         self.A=None
         self.M=None
         self.b=opt_b0
         self.swapped=False
         self.name="Graduate assignment"
+        if(c==None):
+             self.c=False
+        else:
+              self.c=c
         
     
     # The match function: this function find the best match (max or min) among the equivalent classes
     def match(self,X,Y):
-        # Take the two graphs
-        self.X=X
-        self.Y=Y
-        # check the dimensions and set everything to start
-        if(self.X.nodes()>self.Y.nodes()):
-            # swap the two network
-            self.swap()
-            self.swapped=True
-        # initialize match
-        self.initializeMatchMatrix()
-        self.setAssociationGraph()
+    	
+    	if(self.c==True):
+    	    self.f = matcherc.GAc(X.x,Y.x,True)
+    	else: 
+            # Take the two graphs
+            self.X=X
+            self.Y=Y
+            # check the dimensions and set everything to start
+            if(self.X.nodes()>self.Y.nodes()):
+                # swap the two network
+                self.swap()
+                self.swapped=True
+            if(self.X.nodes==1 and self.Y.nodes==1):
+                self.f=list(self.Y.x.keys())[0][0]
+                return
+            # initialize match
+            self.initializeMatchMatrix()
+            self.setAssociationGraph()
         
-        nX=self.X.nodes()
-        nY=self.Y.nodes()
+            nX=self.X.nodes()
+            nY=self.Y.nodes()
 
-        adjX=self.X.adj
-        adjY=self.Y.adj
+            adjX=self.X.adj
+            adjY=self.Y.adj
 
-        # new parameters
-        # Partial derivative matrix taylor expansion
-        Q=lil_matrix((nX, nY))
+            # new parameters
+            # Partial derivative matrix taylor expansion
+            Q=lil_matrix((nX, nY))
         
-        # M0 exp equation
-        M0=lil_matrix((nX+ 1, nY+ 1))
-        #M0=lil_matrix((nX, nY))
-        # M1 scaled M0
-        M1=lil_matrix((nX+ 1, nY+ 1))
-        #M1=lil_matrix((nX, nY))
+            # M0 exp equation
+            M0=lil_matrix((nX+ 1, nY+ 1))
+            #M0=lil_matrix((nX, nY))
+            # M1 scaled M0
+            M1=lil_matrix((nX+ 1, nY+ 1))
+            #M1=lil_matrix((nX, nY))
 
-        # A loop
-        self.b = opt_b0
-        while (self.b < opt_bf):
+            # A loop
+            self.b = opt_b0
+            while (self.b < opt_bf):
             
-            # B loop
-            for  t0 in range(opt_I0):
-                # copy
-                for i in range(nX+1):
-                    M0[i,]=self.M[i,0:nY+1]
+                # B loop
+                for  t0 in range(opt_I0):
+                    # copy
+                    for i in range(nX+1):
+                        M0[i,]=self.M[i,0:nY+1]
 
-                # softmax
-                for i in range(nX):
-                    for j in range(nY):
-                        Q[i,j]=self.a[i,j]
-                        degX=self.X.degree(i)
-                        for k in range(degX):
-                            degY=self.Y.degree(j)
-                            if(degY!=0):
-                                for l in range(degY):
-                                    # equation
-                                    Q[i,j]+=self.A[i,j][k,l]*M0[adjX[i][k],adjY[j][l]]
-                        self.M[i,j]=math.exp(self.b*Q[i,j])
-                ## C loop
-                for t1 in range(opt_I1):
-                    for i in range(nX+1):
-                        # copy
-                        M1[i,]=self.M[i,0:nY+1]
-                    # normalize across all rows
-                    for i in range(nX+1):
-                        row_sum=0
-                        for j in range(nY+1):
-                            row_sum+=self.M[i,j]
-                        for j in range(nY+1):
-                            self.M[i,j]/=row_sum
-                    # normalize across all columns
-                    for j in range(nY+1):
-                        col_sum=0
+                    # softmax
+                    for i in range(nX):
+                        for j in range(nY):
+                            Q[i,j]=self.a[i,j]
+                            degX=self.X.degree(i)
+                            for k in range(degX):
+                                degY=self.Y.degree(j)
+                                if(degY!=0):
+                                    for l in range(degY):
+                                        # equation
+                                        Q[i,j]+=self.A[i,j][k,l]*M0[adjX[i][k],adjY[j][l]]
+                            self.M[i,j]=math.exp(self.b*Q[i,j])
+                    ## C loop
+                    for t1 in range(opt_I1):
                         for i in range(nX+1):
-                            col_sum+=self.M[i,j]
+                            # copy
+                            M1[i,]=self.M[i,0:nY+1]
+                        # normalize across all rows
                         for i in range(nX+1):
-                            self.M[i,j]/=col_sum
+                            row_sum=0
+                            for j in range(nY+1):
+                                row_sum+=self.M[i,j]
+                            for j in range(nY+1):
+                                self.M[i,j]/=row_sum
+                        # normalize across all columns
+                        for j in range(nY+1):
+                            col_sum=0
+                            for i in range(nX+1):
+                                col_sum+=self.M[i,j]
+                            for i in range(nX+1):
+                                self.M[i,j]/=col_sum
+                       
+                        # check for convergence
+                        if(self.isStable(self.M,M1,opt_eps1)):
+                            break
+                    # end C loop
+                  
+                    if(self.isStable(self.M,M0,opt_eps0)):
+                           break
+                # end B loop
+                self.b *= opt_br;
                    
-                    # check for convergence
-                    if(self.isStable(self.M,M1,opt_eps1)):
-                        break
-                # end C loop
-                 
-                if(self.isStable(self.M,M0,opt_eps0)):
-                       break
-            # end B loop
-            self.b *= opt_br;
-                   
-        # end A loop
-        self.cleanup()
+            # end A loop
+            self.cleanup()
 
             
     # set parameters function
@@ -183,11 +196,18 @@ class GA(Matcher):
         self.f=[indexmatch[i][1] for i in range(len(indexmatch))]
         self.f=self.f[0:nX]
         if(self.swapped):
-            g=[]
-            for i in range(nY):
-                g[f[i]]=i
+            g=[None]*nY
+            for j in range(nY):
+            	g[j]=-1
+            for i in range(nX):
+                g[self.f[i]]=i
+            c = nX
+            for l in range(nY):
+            	if(g[l]==-1):
+            	    g[l]=c
+            	    c=c+1
             self.f=g
-            self.swap(self)
+            self.swap() #self era tra parentesi 
    
 
     # swapping the two

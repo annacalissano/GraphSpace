@@ -20,103 +20,149 @@ from sklearn.preprocessing import scale
 import re
 import pandas as pd
 
+import gpcc
+
 class gpc_aac(aligncompute):
     
-    def __init__(self,graphset,matcher):
+    def __init__(self,graphset,matcher,cg=None):
         aligncompute.__init__(self,graphset,matcher)
         self.mean=None
         #self.measure=distance
+        if(cg==None):
+             self.cg=False
+        else:
+              self.cg=cg
+        
     # Command of estimation
     # scale=True, the data are scaled
     # s range on the domain of the geodesic for optimal alignment
     def align_and_est(self,n_comp,scale,s):
-        # If True scaling is applied to the GraphSet
-        self.scale=scale
-        # Range for the alignment wrt a geodesic
-        self.s_min=s[0]
-        self.s_max=s[1]
-        # k=100 maximum number of iteration
-        for k in range(100):
-            # STEP 0: Align wrt an randomly selected observation, Compute the first pca
-            if(k==0):
-                self.f[0]=list(range(self.aX.n_nodes))
-                # PREVIOUS:
-                m_1 = self.aX.X[0]
-                # Align wrt one of the minimum size random element
-                #size_obs = {i: len(self.aX.X[i].adj.keys()) for i in range(self.aX.size())}
-                #min_size = min(size_obs.values())
-                #id_min_size=[i for i, v in size_obs.items() if v == min_size]
-                #m_1=self.aX.X[id_min_size[0]]
-                for i in range(1,self.aX.size()):
-                    # Align X to Y
-                    a=self.matcher.align(self.aX.X[i],m_1)
-                    # Permutation of X to go closer to Y
-                    self.f[i]=a.f 
-                # Compute the first Principal Component in the first step
-                E_1=self.est(n_comp)
-                continue
-                #return E1
+    
+        if (self.cg==True):
+            result=gpcc.compute_gpc(self.X.get_graphset_maps(), self.X.g_type, 100, 0.0001, n_comp, scale, s[0], s[1], self.matcher.name)
+            self.s_min=s[0]
+            self.s_max=s[1]
+            self.f=result[5]
+          #  for i in range(len(result[6])):
+            #    self.aX.X[i]=Graph(x=result[6][i], adj=None, s=None)
+            self.e_val=result[2]
+            self.scores=result[0]
             
-            # STEP 1: Align wrt the first principal component
-            self.align_geo(E_1[1].loc[0,:])
-            # STEP 2: Compute the principal component
-            if(k>0):
-                E_2=self.est(n_comp)
-            # STEP 3: Step range is the difference between the eigenvalues
-            step_range=distance = math.sqrt(sum([(a - b) ** 2 for a, b in zip(E_2[0], E_1[0])]))
+            
+            G_PCA=GraphSet()
+            for i in range(len(result[1])):
+                G_PCA.add(Graph(x=result[1][i],adj=None, s=None))
+               
+            self.e_vec=G_PCA   
+            self.barycenter=np.array(result[4])
+            self.barycenter_net=Graph(x=result[3],adj=None,s=None)
+          
+        
+        else:
+            # If True scaling is applied to the GraphSet
+            self.scale=scale
+            # Range for the alignment wrt a geodesic
+            self.s_min=s[0]
+            self.s_max=s[1]
+            # k=100 maximum number of iteration
+            #self.distances=np.zeros(20); 
+            for k in range(100):
+                # STEP 0: Align wrt an randomly selected observation, Compute the first pca
+                if(k==0):
+                    #self.f[0]=list(range(self.aX.n_nodes))
+                    # PREVIOUS:
+                    m_1 = self.aX.X[0]
+                    # Align wrt one of the minimum size random element
+                    #size_obs = {i: len(self.aX.X[i].adj.keys()) for i in range(self.aX.size())}
+                    #min_size = min(size_obs.values())
+                    #id_min_size=[i for i, v in size_obs.items() if v == min_size]
+                    #m_1=self.aX.X[id_min_size[0]]
+                    for i in range(0,self.aX.size()):
+                        # Align X to Y
+                        a=self.matcher.align(self.aX.X[i],m_1)
+                        # Permutation of X to go closer to Y
+                        self.f[i]=a.f 
+                    # Compute the first Principal Component in the first step
+                    
+                    E_1=self.est(n_comp)
+                    #print(E_1[2])
+                    continue
+                    #return E1
+                    
+                # STEP 1: Align wrt the first principal component
+                self.align_geo(E_1[1].loc[0,:])
+                #print(self.f)
+               #for i in range(len(self.f)):
+               #         print(self.f[i])
+                        #print("\n")
+                        #print(self.aX.X[i].x)
+                        
+                # STEP 2: Compute the principal component
+                if(k>0):
+                    print("Start Iteration"+ str(k))
+                    E_2=self.est(n_comp)
+                    #print(E_1[2])
+                    #print(E_2[2])
+                    #print("\n")
+                # STEP 3: Step range is the difference between the eigenvalues
+                step_range=distance = math.sqrt(sum([(a - b) ** 2 for a, b in zip(E_2[0], E_1[0])]))
+                print(step_range)
+                #self.distances[k-1]=step_range
+                 
 
-            if(step_range<0.01):
-                # IF small enough, I am converging! Save and exit.
+                if(step_range<0.0001):
+                    # IF small enough, I am converging! Save and exit.
+                    self.e_val=E_2[0]
+                    self.scores=E_2[2]
+                    if(n_comp==1):
+                        self.e_vec=self.give_me_a_network(E_2[1].loc[0,:],n_a=self.aX.node_attr,e_a=self.aX.edge_attr)
+                        self.barycenter_net=self.give_me_a_network(self.barycenter,n_a=self.aX.node_attr,e_a=self.aX.edge_attr)
+                    else:
+                        G_PCA=GraphSet()
+                        for n_pca in range(n_comp):
+                            G_PCA.add(self.give_me_a_network(E_2[1].loc[n_pca,:],n_a=self.aX.node_attr,e_a=self.aX.edge_attr))
+                        self.e_vec=G_PCA
+                        self.barycenter_net = self.give_me_a_network(self.barycenter, n_a=self.aX.node_attr,
+                                                                 e_a=self.aX.edge_attr)
+                    print("Step Range smaller than 0.001")
+                
+                    return
+                else:
+                    # Go on with the computation: update the new result and restart from step 1.
+                    del E_1
+                    E_1=E_2
+                    del E_2
+            print("Maximum number of iteration reached.")  
+            # Return the result
+            if('E_2' in locals()):
                 self.e_val=E_2[0]
                 self.scores=E_2[2]
+                self.barycenter_net = self.give_me_a_network(self.barycenter, n_a=self.aX.node_attr,
+                                                         e_a=self.aX.edge_attr)
                 if(n_comp==1):
                     self.e_vec=self.give_me_a_network(E_2[1].loc[0,:],n_a=self.aX.node_attr,e_a=self.aX.edge_attr)
-                    self.barycenter_net=self.give_me_a_network(self.barycenter,n_a=self.aX.node_attr,e_a=self.aX.edge_attr)
+
                 else:
                     G_PCA=GraphSet()
                     for n_pca in range(n_comp):
                         G_PCA.add(self.give_me_a_network(E_2[1].loc[n_pca,:],n_a=self.aX.node_attr,e_a=self.aX.edge_attr))
                     self.e_vec=G_PCA
-                    self.barycenter_net = self.give_me_a_network(self.barycenter, n_a=self.aX.node_attr,
-                                                                 e_a=self.aX.edge_attr)
-                print("Step Range smaller than 0.001")
-                return
-            else:
-                # Go on with the computation: update the new result and restart from step 1.
-                del E_1
-                E_1=E_2
+                    del G_PCA
                 del E_2
-        print("Maximum number of iteration reached.")  
-        # Return the result
-        if('E_2' in locals()):
-            self.e_val=E_2[0]
-            self.scores=E_2[2]
-            self.barycenter_net = self.give_me_a_network(self.barycenter, n_a=self.aX.node_attr,
-                                                         e_a=self.aX.edge_attr)
-            if(n_comp==1):
-                self.e_vec=self.give_me_a_network(E_2[1].loc[0,:],n_a=self.aX.node_attr,e_a=self.aX.edge_attr)
-
             else:
-                G_PCA=GraphSet()
-                for n_pca in range(n_comp):
-                    G_PCA.add(self.give_me_a_network(E_2[1].loc[n_pca,:],n_a=self.aX.node_attr,e_a=self.aX.edge_attr))
-                self.e_vec=G_PCA
-                del G_PCA
-            del E_2
-        else:
-            self.e_val=E_1[0]
-            self.scores=E_1[2]
-            self.barycenter_net = self.give_me_a_network(self.barycenter, n_a=self.aX.node_attr,
+                self.e_val=E_1[0]
+                self.scores=E_1[2]
+                self.barycenter_net = self.give_me_a_network(self.barycenter, n_a=self.aX.node_attr,
                                                          e_a=self.aX.edge_attr)
-            if(n_comp==1):
-                self.e_vec=self.give_me_a_network(E_1[1].loc[0,:],n_a=self.aX.node_attr,e_a=self.aX.edge_attr)
-            else:
-                G_PCA=GraphSet()
-                for n_pca in range(n_comp):
-                    G_PCA.add(self.give_me_a_network(E_1[1].loc[n_pca,:],n_a=self.aX.node_attr,e_a=self.aX.edge_attr))
-                self.e_vec=G_PCA
-                del G_PCA
-            del E_1
+                if(n_comp==1):
+                    self.e_vec=self.give_me_a_network(E_1[1].loc[0,:],n_a=self.aX.node_attr,e_a=self.aX.edge_attr)
+                else:
+                    G_PCA=GraphSet()
+                    for n_pca in range(n_comp):
+                        G_PCA.add(self.give_me_a_network(E_1[1].loc[n_pca,:],n_a=self.aX.node_attr,e_a=self.aX.edge_attr))
+                    self.e_vec=G_PCA
+                    del G_PCA
+                del E_1
         
         
     # Align wrt a geodesic
@@ -127,19 +173,26 @@ class gpc_aac(aligncompute):
         # to transform the vector into a network
         self.aX.get_node_attr()
         self.aX.get_edge_attr()
+
         geo_net=self.give_me_a_network(geo,n_a=self.aX.node_attr,e_a=self.aX.edge_attr)
+        #print(geo_net.scale(self.s_min).x)
+        
+       
+        #print(geo_net.x)
         if(self.scale==False):
             barycenter_net=self.give_me_a_network(self.barycenter,n_a=self.aX.node_attr,e_a=self.aX.edge_attr)
-            print(barycenter_net.x)
+     
         # step 1: every graph for every tilde_t in -T,T
         # Save the alignment for every i for every t_tilde in a dictionary
+        
         for i in range(self.aX.size()):
+            #print(self.aX.X[i].x)
             ind=0
             f_i_t={}
             d_i_t=[]
             if(self.scale==True):
                 # HERE! CHANGE THE PARAMETERS! OF THE RANGE
-                for tilde_t in range(self.s_min,+self.s_max,int(abs(self.s_max-self.s_min)/10)):
+                for tilde_t in range(self.s_min,+self.s_max,int(abs(self.s_max-self.s_min)/10)):     
                     a=self.matcher.align(self.aX.X[i],geo_net.scale(tilde_t))
                     d_i_t+=[a.dis()]
                     f_i_t[ind]=a.f
@@ -152,14 +205,19 @@ class gpc_aac(aligncompute):
                     # the line passing through the barycenter
                     G_tilde=self.add(1, barycenter_net, tilde_t, geo_net, range(barycenter_net.nodes()))
                     #print(G_tilde.x)
+                    #print("\n")
+                    #print(self.aX.X[i])
                     a = self.matcher.align(self.aX.X[i], G_tilde)
                     d_i_t += [a.dis()]
                     f_i_t[ind] = a.f
                     ind += 1
                     del a,G_tilde
             # step 2: find the best t_tilde for every i that minimize the distance
+            #print(d_i_t)
             t=np.argmin(d_i_t)
+            #print("min pos:   "+str(t)+ "    min dis:   "+str(d_i_t[t])+"\n")
             self.f[i]=f_i_t[t]
+            #print(self.f[i])
             del ind,d_i_t,f_i_t
     
     # Est is computing the Covariance Matrix. The covariance matrix is the best choice 
@@ -171,19 +229,22 @@ class gpc_aac(aligncompute):
         G_per=GraphSet()
         for i in range(N):
             G=copy.deepcopy(self.aX.X[i])
+            #print(self.f[i])
             G.permute(self.f[i])
+            #print(G.x)
             G_per.add(G)
             del(G)
         Mat=G_per.to_matrix_with_attr()
-        #print(Mat)
+        
         # Standardizing the features
         if(self.scale==True):
             Mat_scale = pd.DataFrame(scale(Mat),columns = Mat.columns)
+            self.barycenter=np.mean(Mat_scale)
 
         else:
             Mat_scale=Mat
             self.barycenter=np.mean(Mat_scale)
-            print(self.barycenter)
+       
         pca = PCA(n_components=n_pca)
         scores = pca.fit_transform(Mat_scale)
         vals=pca.explained_variance_ratio_
@@ -244,7 +305,7 @@ class gpc_aac(aligncompute):
                 elif(not (i,j) in x):
                     #new[fi,fj]=self.summ(ax,[0]*len(x[i,j0]),ay,y[fi,fj])
                     new[i,j]=self.summ(ax,None,ay,y[i,j])
-        newG=Graph(x=new,y=None,adj=None)
+        newG=Graph(x=new,s=None,adj=None)
         return newG
     
     # Add at y a linear combination of x y=ax*y + ay*x
@@ -323,7 +384,7 @@ class gpc_aac(aligncompute):
             elif(len(ind[i])==2 and not (int(ind[i][0]),int(ind[i][1])) in x_g):
                 x_g[int(ind[i][0]),int(ind[i][1])]=[geo.loc[geo.axes[0][i]]]
         
-        geo_net=Graph(x=x_g,adj=None,y=None)
+        geo_net=Graph(x=x_g,adj=None,s=None)
         return geo_net
 
     def give_me_a_graphset(self,mat,n_a,e_a):

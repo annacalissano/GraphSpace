@@ -1,6 +1,6 @@
 from core import Graph
 from core import GraphSet
-from matcher import Matcher, BK, alignment, GA, ID
+from matcher import Matcher, alignment, GA# ID , BK,
 from distance import euclidean
 import itertools
 import copy
@@ -51,7 +51,7 @@ class MeanIterative:
                     step_range = self.m_matcher.dis(copy.deepcopy(m_C_old), copy.deepcopy(m_C_curr))
                     if (step_range < 0.01):
                         self.m_C = m_C_curr
-                        self.m_C.setClassLabel(0)
+                        self.m_C.setFeatures(0)
                         return self.m_C
                         m_C_old = copy.deepcopy(m_C_curr)
                         del (a, m_C_curr)

@@ -212,6 +212,6 @@ class alignment:
                     new[i,j]=self.summ(ax,x[i,j],ay,None)
                 elif(not (i,j) in x):
                     new[i,j]=self.summ(ax,None,ay,y[i,j])
-            newG=Graph(x=new,y=self.Y.y,adj=None)
+            newG=Graph(x=new,s=self.Y.s,adj=None)
         return newG
     

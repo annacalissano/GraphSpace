@@ -11,7 +11,7 @@ import math
 
 class Matcher(object):
     
-    def __init__(self,measure=None,X=None,Y=None,f=None):
+    def __init__(self,measure=None,X=None,Y=None,f=None,c=None):
         if(measure==None):
             self.measure=euclidean()
         else:
@@ -20,7 +20,12 @@ class Matcher(object):
         # if is weighted -> weights are an  n*n adjacency matrix as received in input
         self.X=None
         self.Y=None
+        # f represent the permutation of X to get to Y
         self.f=None
+        if(c==None):
+             self.c=False
+        else:
+              self.c=c
 
     # Core method of the Matcher: initialize the best matching permutation of nodes between X and Y
     def match(self,measure,X,Y):

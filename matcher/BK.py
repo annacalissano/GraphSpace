@@ -52,7 +52,7 @@ class BK(Matcher):
             P+=[i] # CHECK, maybe is not the same
         self.search(0.0,C,P,S)
         self.setf()
-        
+    
         
     # Search function
     def search(self,sim,C,P,S):
