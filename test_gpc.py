@@ -41,11 +41,10 @@ gpc_p.align_and_est(3,False,[0,10])
 end2=time.time()
 print("Tempo Impiegato:"+str(end2-start2))
 
-
-pos={0: [-1.,  -2.],
-1: [-2., 0.        ],
-4: [ 0., 2.],
-3: [2. , 0.],
+pos={1: [-1.,  -2.],
+0: [-2., 0.        ],
+3: [ 0., 2.],
+4: [2. , 0.],
 2: [1. , -2.] }
 
 #PLOT WITH C++ BINDING
@@ -172,11 +171,6 @@ plt.figure()
 norm = mpl.colors.Normalize(vmin=-120, vmax=120, clip=True)
 mapper = cm.ScalarMappable(norm=norm, cmap='seismic')
 
-pos={0: [-1.,  -2.],
-1: [-2., 0.        ],
-4: [ 0., 2.],
-3: [2. , 0.],
-2: [1. , -2.] }
 
 
 for i in range(len(G_along_GPC4.X)):
