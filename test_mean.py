@@ -16,7 +16,7 @@ import matplotlib.cm as cm
 X = GraphSet()
 
 #X.read_from_text("Pentagones_10_100_500_Perm.txt")
-X.read_from_text("Mammals_Grooming_kickouts_less20.txt")
+X.read_from_text("Mammals_Grooming_kickouts.txt")
 
 match1=GA()
 match2=GA(c=True)
