@@ -104,7 +104,7 @@ norm = mpl.colors.Normalize(vmin=-120, vmax=120, clip=True)
 mapper = cm.ScalarMappable(norm=norm, cmap='seismic')
 
 
-for i in range(len(G_along_GPC.X)):
+for i in range(len(G_along_GPC3.X)):
     G_plot1=G_along_GPC3.X[i].to_networkX(layer=0, node_too=True)
     #pos=nx.kamada_kawai_layout(G_plot1)
     colors=list(nx.get_edge_attributes(G_plot1,'weight').values())
