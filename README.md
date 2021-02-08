@@ -29,9 +29,6 @@ AlignCompute:
 
 Acknowledgement: A great acknowledgment goes to Brijnesh Jain, whose code is used as a starting point for this package. Gianluca Zeni has been massively contributing on the implementation of the python package.
 
-Please cite the package as:
-
-Calissano, Feragen, Vantini (2020) "GraphSpace" https://github.com/annacalissano/GraphSpace/
 
 
 [1] Calissano, Anna, Feragen, Aasa and Vantini, Simone "Graph Space: Geodesic Principal Components for aPopulation of Network-valued Data" MOX Report (2020)
