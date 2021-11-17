@@ -237,7 +237,7 @@ class Graph:
             for j in range(degree):
                 j0=self.adj[i][j]
                 x_new[i,j0]=list(np.multiply(a,self.x[i,j0]))
-        return Graph(x=x_new,adj=self.adj,y=self.s)
+        return Graph(x=x_new,adj=self.adj,s=self.s)
                 
     # Permuting indexes of the nodes
     def permutelist(self):
@@ -447,18 +447,24 @@ class Graph:
     # input:
     # - layer: the layer to extract
     # - node_too: True if the layer should be extracted from the nodes, False otherwise
-    def to_networkX(self,layer,node_too):
+    def to_networkX(self,layer,node_too,directed):
+        if(directed==True):
+            G = nx.DiGraph()
+        else:
+            G=nx.Graph()
         if(layer!=None):
             _x=self.extract_layer(layer,node_too)
-            G = nx.Graph()
             G.add_nodes_from(range(self.n_nodes))
             G.add_edges_from([e for e in list(_x.keys()) if e[0]!=e[1]])
+            if(node_too==True):
+                nx.set_node_attributes(G, dict((k[0],{'weight':float(v[0])}) for k,v in _x.items() if k[0]==k[1]))
             nx.set_edge_attributes(G, dict((k,float(v[0])) for k,v in _x.items()), 'weight')
         else:
             print("Caution: No Layer Specified")
-            G = nx.Graph()
             G.add_nodes_from(range(self.n_nodes))
-            G.add_edges_from(list(self.x.keys()))
+            G.add_edges_from([e for e in list(_x.keys()) if e[0]!=e[1]])
+            if(node_too==True):
+                nx.set_node_attributes(G, dict((k[0],{'weight':float(v[0])}) for k,v in _x.items() if k[0]==k[1]))
             nx.set_edge_attributes(G, self.x, 'weight')
         return G
     

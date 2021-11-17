@@ -241,5 +241,4 @@ class Matcher(object):
                     for i in range(n):
                         d[i]=self.dis(args[1],args[0].X[i])
                     return d
-                ########            
-                
+                ########

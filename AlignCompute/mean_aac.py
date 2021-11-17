@@ -65,6 +65,7 @@ class mean_aac(aligncompute):
                 del m_1
                 m_1=m_2
                 del m_2
+                # check here
                 self.f.clear()
         print("Maximum number of iteration reached.")  
         if('m_2' in locals()):
@@ -155,7 +156,7 @@ class mean_aac(aligncompute):
             newG=Graph(x=new,s=None,adj=None)
         return newG
     
-    # Add at y a linear combination of x y=ax*y + ay*x
+    # Add at y a linear combination of x y=ay*y + ax*x
     def summ(self,ax,x,ay,y): #ax,ay are scalar, x,y are vectors
         if(x is None and y is None):
             return None
@@ -220,11 +221,12 @@ class mean_aac(aligncompute):
 class mean_aac_pred(mean_aac):
 
     def __init__(self, graphset, matcher, propTraining=0.7):
+        np.random.seed(10)
         # training and calibration sets
-        n = graphset.size()
-        nt = int(np.floor(n * propTraining))
-        idx = np.random.permutation(n)
-        idx_train, idx_cal = idx[:nt], idx[nt:]
+        self.n = graphset.size()
+        self.nt = int(np.floor(self.n * propTraining))
+        idx = np.random.permutation(self.n)
+        idx_train, idx_cal = idx[:self.nt], idx[self.nt:]
         mean_aac.__init__(self, graphset.sublist(idx_train), matcher)
         self.X_dev = graphset.sublist(idx_cal)  # is it a copy? no
         self.aX_dev = copy.deepcopy(self.X_dev)
@@ -257,10 +259,18 @@ class mean_aac_pred(mean_aac):
             # del match
 
         print('\n Computing residuals')
+        # compute the absolute residuals
         res = abs(self.aX_dev.to_matrix_with_attr() - self.mean.to_vector_with_attributes().iloc[0])
         res_norm = res / (dataSd + e)
         scores = res_norm.max(axis=1)  # L1 norm
-        err = np.quantile(scores, 1 - alpha)
+        scores_sort_inf = np.sort(list(scores) + [float('inf')])
+        #err = np.quantile(scores, 1 - alpha,interpolation='higher')
+        print("alpha"+str(alpha))
+        print("n"+str(self.n))
+        print("nt"+str(self.nt))
+        print(scores_sort_inf)
+        err=scores_sort_inf[int(np.ceil((1-alpha)*(self.n-self.nt+1))-1)]
+        print(err)
         erri = err * dataSd  # err in direction i
 
         print('\n Computing prediction regions')
@@ -271,4 +281,3 @@ class mean_aac_pred(mean_aac):
         # TODO Save prediction regions as graphs (and not just as a matrix)
         # self.conformal_low = Graph(x={y: [x] for x in self.conformal_matrix.iloc[0,] for y in self.conformal_matrix.columns},
         #                            s=None, adj=None) # NOT WORKING: columns contains strings :(
-

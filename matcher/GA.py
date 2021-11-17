@@ -88,12 +88,12 @@ class GA(Matcher):
                     for j in range(nY):
                         Q[i,j]=self.a[i,j]
                         degX=self.X.degree(i)
-                        for k in range(degX):
+                        for kk in range(degX):
                             degY=self.Y.degree(j)
                             if(degY!=0):
                                 for l in range(degY):
                                     # equation
-                                    Q[i,j]+=self.A[i,j][k,l]*M0[adjX[i][k],adjY[j][l]]
+                                    Q[i,j]+=self.A[i,j][kk,l]*M0[adjX[i][kk],adjY[j][l]]
                         self.M[i,j]=math.exp(self.b*Q[i,j])
                 ## C loop
                 for t1 in range(opt_I1):
@@ -147,31 +147,33 @@ class GA(Matcher):
         nY=self.Y.nodes()
         self.A={} # distance edges
         self.a=np.empty([nX,nY]) # distance nodes
-        for i in range(nX):
-            degX=self.X.degree(i)
-            for j in range(nY): 
+        for ii in range(nX):
+            degX=self.X.degree(ii)
+            for jj in range(nY): 
                 
-                degY=self.Y.degree(j)
+                degY=self.Y.degree(jj)
                 # node distance
-                self.a[i,j]=self.measure.node_sim(x[i,i],y[j,j])
-                scale=max(abs(self.a[i,j]),scale)
-                self.A[i,j]=lil_matrix((degX, degY))
-                for k in range(degX):                        
-                    k0=adjX[i][k]
-                    for l in range(degY):
-                        l0=adjY[j][l]
-                        self.A[i,j][k,l]=self.measure.edge_sim(x[i,k0],y[j,l0])
-                        scale=max(abs(self.A[i,j][k,l]),scale)
+                self.a[ii,jj]=self.measure.node_sim(x[ii,ii],y[jj,jj])
+                scale=max(abs(self.a[ii,jj]),scale)
+                self.A[ii,jj]=lil_matrix((degX, degY))
+                for kk in range(degX):                        
+                    k0=adjX[ii][kk]
+                    for ll in range(degY):
+                        l0=adjY[jj][ll]
+                        meas=self.measure.edge_sim(x[ii, k0], y[jj, l0])
+                        self.A[ii, jj][kk, ll] = meas
+                        del(meas)
+                        scale=max(abs(self.A[ii,jj][kk,ll]),scale)
         if(scale==0):
             return self
-        for i in range(nX):
-            for j in range(nY):
-                self.a[i,j]=self.a[i,j]/scale
-                degX=self.X.degree(i)
-                for k in range(degX):
-                    degY=self.Y.degree(j)
-                    for l in range(degY):
-                        self.A[i,j][k,l]=self.A[i,j][k,l]/scale
+        for ii in range(nX):
+            for jj in range(nY):
+                self.a[ii,jj]=self.a[ii,jj]/scale
+                degX=self.X.degree(ii)
+                for kk in range(degX):
+                    degY=self.Y.degree(jj)
+                    for ll in range(degY):
+                        self.A[ii,jj][kk,ll]=self.A[ii,jj][kk,ll]/scale
 
     # computing the matching with the hungarian algorithm in the Munkres function                    
     def cleanup(self):

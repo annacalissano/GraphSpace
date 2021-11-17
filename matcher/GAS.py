@@ -46,8 +46,8 @@ class GAS(Matcher):
     def match(self, X, Y, storeDistance=False):
         # Take the two graphs - they have already the same size
 
-        self.X = X
-        self.Y = Y
+        self.X = copy.deepcopy(X)
+        self.Y = copy.deepcopy(Y)
         if(self.X.nodes()==1 and self.Y.nodes()==1):
             print("No Edges")
             self.f=list(self.Y.x.keys())[0][0]
@@ -55,8 +55,8 @@ class GAS(Matcher):
         nX = self.X.nodes()
         # set of non-zero nodes (i,i) that are in X or in Y
         # note. assuming that if there is an edge (i,j), both i and j have non-zero attribute
-        isetn = set((i, j) for ((i, j), y) in self.X.x.items() if y != [0] if i == j).union(
-            set((i, j) for ((i, j), y) in self.Y.x.items() if y != [0] if i == j))
+        isetn = set((i, j) for ((i, j), y) in self.X.x.items() if y != [0.0] if i == j).union(
+            set((i, j) for ((i, j), y) in self.Y.x.items() if y != [0.0] if i == j))
         isetn = sorted(isetn)
         # set of indices i of non-zero nodes (i,i) that are in X or in Y
         isetnn = [i for (i, j) in isetn]
@@ -75,7 +75,11 @@ class GAS(Matcher):
         del x_vec_n, y_vec_n
 
         #   matrix of pairwise distances btw edges:
-        try:
+        # degenerate graphs
+        if self.X.edge_attr + self.Y.edge_attr == 0:  # if both the two graphs have no edge
+            gas_e = pd.DataFrame()
+        elif self.X.edge_attr * self.Y.edge_attr == 0:  # if one of the two graphs has no edge
+            self.X.edge_attr = self.Y.edge_attr = max(self.X.edge_attr, self.Y.edge_attr)
             x_vec_e = self.X.to_vector_with_select_edges(isete)
             y_vec_e = self.Y.to_vector_with_select_edges(isete)
             gas_e = pd.DataFrame(pairwise_distances(x_vec_e,
@@ -84,20 +88,15 @@ class GAS(Matcher):
                                  columns=y_vec_e.index,
                                  index=x_vec_e.index)
             del x_vec_e, y_vec_e
-        except:
-            # degenerate graphs
-            if self.X.edge_attr + self.Y.edge_attr == 0:  # if both the two graphs have no edge
-                gas_e = pd.DataFrame()
-            if self.X.edge_attr * self.Y.edge_attr == 0:  # if one of the two graphs has no edge
-                self.X.edge_attr = self.Y.edge_attr = max(self.X.edge_attr, self.Y.edge_attr)
-                x_vec_e = self.X.to_vector_with_select_edges(isete)
-                y_vec_e = self.Y.to_vector_with_select_edges(isete)
-                gas_e = pd.DataFrame(pairwise_distances(x_vec_e,
-                                                        y_vec_e,
-                                                        metric=self.metricEdge),
-                                     columns=y_vec_e.index,
-                                     index=x_vec_e.index)
-                del x_vec_e, y_vec_e
+        else:
+            x_vec_e = self.X.to_vector_with_select_edges(isete)
+            y_vec_e = self.Y.to_vector_with_select_edges(isete)
+            gas_e = pd.DataFrame(pairwise_distances(x_vec_e,
+                                                    y_vec_e,
+                                                    metric=self.metricEdge),
+                                 columns=y_vec_e.index,
+                                 index=x_vec_e.index)
+            del x_vec_e, y_vec_e
 
         # optimization model:
         # initialize the model

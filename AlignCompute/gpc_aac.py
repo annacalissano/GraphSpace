@@ -9,7 +9,7 @@
 from core import Graph
 from core import GraphSet
 from matcher import Matcher, BK, alignment, GA, ID
-from distance import euclidean
+from distance import euclidean,hamming,sqeuclidean
 from AlignCompute import aligncompute
 import numpy as np
 import itertools
@@ -25,16 +25,24 @@ class gpc_aac(aligncompute):
     def __init__(self,graphset,matcher):
         aligncompute.__init__(self,graphset,matcher)
         self.mean=None
-        #self.measure=distance
+        self.distance=sqeuclidean()
     # Command of estimation
     # scale=True, the data are scaled
     # s range on the domain of the geodesic for optimal alignment
-    def align_and_est(self,n_comp,scale,s):
+    def align_and_est(self,n_comp,scale,s,interval_sample=10):
         # If True scaling is applied to the GraphSet
         self.scale=scale
+        self.interval_sample=interval_sample
         # Range for the alignment wrt a geodesic
         self.s_min=s[0]
         self.s_max=s[1]
+        self.all_steps={}
+        self.all_perm={}
+        self.pcas={}
+        self.pca_error = {}  # pd.DataFrame(0,index=range(graphset.size()), columns=range(self.nr_iterations))
+        self.postalignment_error = {}  # pd.DataFrame(0,index=range(graphset.size()), columns=range(self.nr_iterations))
+        self.pcaold_error={}
+        self.pca_error_huckerman={}
         # k=100 maximum number of iteration
         for k in range(100):
             # STEP 0: Align wrt an randomly selected observation, Compute the first pca
@@ -53,15 +61,19 @@ class gpc_aac(aligncompute):
                     # Permutation of X to go closer to Y
                     self.f[i]=a.f 
                 # Compute the first Principal Component in the first step
-                E_1=self.est(n_comp)
+                self.all_perm[k]=self.f
+                E_1=self.est(n_comp,k)
+                self.all_steps[k]=E_1[0]
                 continue
                 #return E1
             
             # STEP 1: Align wrt the first principal component
-            self.align_geo(E_1[1].loc[0,:])
+            self.align_geo(E_1[1].loc[0,:],k)
             # STEP 2: Compute the principal component
             if(k>0):
-                E_2=self.est(n_comp)
+                self.all_perm[k] = self.f
+                E_2=self.est(n_comp,k,E_1[3])
+                self.all_steps[k]=E_2[0]
             # STEP 3: Step range is the difference between the eigenvalues
             step_range=distance = math.sqrt(sum([(a - b) ** 2 for a, b in zip(E_2[0], E_1[0])]))
 
@@ -79,6 +91,21 @@ class gpc_aac(aligncompute):
                     self.e_vec=G_PCA
                     self.barycenter_net = self.give_me_a_network(self.barycenter, n_a=self.aX.node_attr,
                                                                  e_a=self.aX.edge_attr)
+                self.pca_error=pd.DataFrame.from_dict({iteration:[
+                    self.pca_error[observation,iteration] for observation in range(self.aX.size())] for
+                    iteration in range(0,k+1)})
+                self.pcaold_error = pd.DataFrame.from_dict({iteration: [
+                    self.pcaold_error[observation, iteration] for observation in range(self.aX.size())] for
+                    iteration in range(1, k+1)})
+
+                self.postalignment_error = pd.DataFrame.from_dict({iteration: [
+                    self.postalignment_error[observation, iteration] for observation in range(self.aX.size())] for
+                                                                iteration in range(1,k+1)})
+
+                self.pca_error_huckerman = pd.DataFrame.from_dict({iteration: [
+                    self.pca_error_huckerman[observation, iteration] for observation in range(self.aX.size())] for
+                    iteration in range(1, k + 1)})
+
                 print("Step Range smaller than 0.001")
                 return
             else:
@@ -86,7 +113,22 @@ class gpc_aac(aligncompute):
                 del E_1
                 E_1=E_2
                 del E_2
-        print("Maximum number of iteration reached.")  
+        self.pca_error = pd.DataFrame.from_dict({iteration: [
+            self.pca_error[observation, iteration] for observation in range(self.aX.size())] for
+            iteration in range(0, k + 1)})
+        self.pcaold_error = pd.DataFrame.from_dict({iteration: [
+            self.pcaold_error[observation, iteration] for observation in range(self.aX.size())] for
+            iteration in range(1, k + 1)})
+
+        self.postalignment_error = pd.DataFrame.from_dict({iteration: [
+            self.postalignment_error[observation, iteration] for observation in range(self.aX.size())] for
+            iteration in range(1, k + 1)})
+
+        self.pca_error_huckerman = pd.DataFrame.from_dict({iteration: [
+            self.pca_error_huckerman[observation, iteration] for observation in range(self.aX.size())] for
+            iteration in range(1, k + 1)})
+        print("Maximum number of iteration reached.")
+
         # Return the result
         if('E_2' in locals()):
             self.e_val=E_2[0]
@@ -120,7 +162,7 @@ class gpc_aac(aligncompute):
         
         
     # Align wrt a geodesic
-    def align_geo(self,geo):
+    def align_geo(self,geo,k):
         self.f.clear()
         # the alignment wrt a geodesic gamma(t) work in two step:
         # In this application, the geodesic gamma is a network so I need 
@@ -130,41 +172,49 @@ class gpc_aac(aligncompute):
         geo_net=self.give_me_a_network(geo,n_a=self.aX.node_attr,e_a=self.aX.edge_attr)
         if(self.scale==False):
             barycenter_net=self.give_me_a_network(self.barycenter,n_a=self.aX.node_attr,e_a=self.aX.edge_attr)
-            print(barycenter_net.x)
         # step 1: every graph for every tilde_t in -T,T
         # Save the alignment for every i for every t_tilde in a dictionary
         for i in range(self.aX.size()):
             ind=0
             f_i_t={}
             d_i_t=[]
+            d_i_t_ID=[]
             if(self.scale==True):
-                # HERE! CHANGE THE PARAMETERS! OF THE RANGE
-                for tilde_t in range(self.s_min,+self.s_max,int(abs(self.s_max-self.s_min)/10)):
+                for tilde_t in np.arange(self.s_min,+self.s_max,abs(self.s_max-self.s_min)/self.interval_sample):
                     a=self.matcher.align(self.aX.X[i],geo_net.scale(tilde_t))
                     d_i_t+=[a.dis()]
                     f_i_t[ind]=a.f
                     ind+=1
-                    del a
+                    a_id= ID(self.distance).align(self.aX.X[i], geo_net.scale(tilde_t))
+                    d_i_t_ID+=[a_id.dis()]
+                    del a,a_id
             else:
-                for tilde_t in range(self.s_min,+self.s_max,int(abs(self.s_max-self.s_min)/10)):
+                for tilde_t in np.arange(self.s_min,+self.s_max,abs(self.s_max-self.s_min)/self.interval_sample):
                     # If the data are not scaled then the pca should be recentered in the mean, but the mean is not
                     # The barycenter is computed at the previous alignment step so the data are aligned wrt
                     # the line passing through the barycenter
-                    G_tilde=self.add(1, barycenter_net, tilde_t, geo_net, range(barycenter_net.nodes()))
-                    #print(G_tilde.x)
+                    #G_tilde=self.add(1, barycenter_net, tilde_t, self.add(1, barycenter_net, -1, geo_net, range(barycenter_net.nodes())), range(barycenter_net.nodes()))
+                    G_tilde = self.add(1, barycenter_net, tilde_t,
+                                       geo_net,
+                                       range(barycenter_net.nodes()))
                     a = self.matcher.align(self.aX.X[i], G_tilde)
                     d_i_t += [a.dis()]
                     f_i_t[ind] = a.f
                     ind += 1
-                    del a,G_tilde
+                    a_id= ID(self.distance).align(self.aX.X[i], G_tilde)
+                    d_i_t_ID+=[a_id.dis()]
+                    del a,G_tilde,a_id
             # step 2: find the best t_tilde for every i that minimize the distance
             t=np.argmin(d_i_t)
             self.f[i]=f_i_t[t]
+            self.postalignment_error[i, k] = np.min(d_i_t)
+            self.pca_error_huckerman[i, k] = np.min(d_i_t_ID)
+
             del ind,d_i_t,f_i_t
     
     # Est is computing the Covariance Matrix. The covariance matrix is the best choice 
     # because it let you deal with different type of distance on node and edges
-    def est(self,n_pca):
+    def est(self,n_pca,k,old_pca=None):
         # dimension of the dataset
         N=self.aX.size()
         # Step 1: Create the current permuted dataset
@@ -174,27 +224,48 @@ class gpc_aac(aligncompute):
             G.permute(self.f[i])
             G_per.add(G)
             del(G)
+
         Mat=G_per.to_matrix_with_attr()
-        #print(Mat)
+
         # Standardizing the features
         if(self.scale==True):
             Mat_scale = pd.DataFrame(scale(Mat),columns = Mat.columns)
 
         else:
             Mat_scale=Mat
-            self.barycenter=np.mean(Mat_scale)
-            print(self.barycenter)
+            #self.barycenter=np.mean(Mat_scale)
         pca = PCA(n_components=n_pca)
         scores = pca.fit_transform(Mat_scale)
         vals=pca.explained_variance_ratio_
-        #scores=pca.transform(Mat_scale)
         vecs=pd.DataFrame(pca.components_,columns=Mat_scale.columns)
-        #top=np.argmax(vals_k)
-        # TO HERE 
-        #vals=(vals_k[top]/sum(vals_k)).real
-        #vecs=vecs_k[:,[top]]
+        self.pcas[k]=[pca,Mat_scale]
+        self.barycenter = pd.Series(pca.mean_,index=Mat_scale.columns)#np.mean(Mat_scale)
+        if(k>0):
+            # Compute the alignment error
+            Mat_along_old = pd.DataFrame(old_pca.inverse_transform(scores), columns=Mat_scale.columns)
+            for i in range(N):
+                x_along = Mat_along_old.iloc[i, :]
+                X_curr_pca = self.give_me_a_network(x_along, n_a=self.aX.node_attr, e_a=self.aX.edge_attr)
+                matchID = ID(self.distance)
+                a=matchID.align(G_per.X[i], X_curr_pca)
+                self.pcaold_error[i, k] = a.dis()
+                del(matchID,X_curr_pca,x_along,a)
+
+
+        # Compute the pca error
+        # FIT TRANSFORM THE DATA along the first pca
+        Mat_along= pd.DataFrame(pca.inverse_transform(scores),
+                                     columns=Mat_scale.columns)
+        # PCA error:
+        for i in range(N):
+            x_along=Mat_along.iloc[i,:]
+            X_curr_pca= self.give_me_a_network(x_along, n_a=self.aX.node_attr, e_a=self.aX.edge_attr)
+            matchID = ID(self.distance)
+            a=matchID.align(G_per.X[i], X_curr_pca)
+            self.pca_error[i, k] = a.dis()
+            del(matchID,X_curr_pca,x_along,a)
         del Mat,Mat_scale,G_per
-        return (vals,vecs,scores)
+        return (vals,vecs,scores,pca)
     
     # add function  is the one used for computing the mean
     def add(self,ax,A,ay,B,f):
@@ -263,7 +334,7 @@ class gpc_aac(aligncompute):
                 for i in range(n):
                     res+=[ax*x[i]+ay*y[i]]
                 return res
-    
+
     # # component wise distance function: usefull to compute the covariance
     # def dis_componentwise(self,A,B,f):
     #     # Adjency Matrix: x, y
@@ -312,9 +383,10 @@ class gpc_aac(aligncompute):
     # geo is a pd Series
     # n_a and e_a are nodes and edges attributes
     def give_me_a_network(self,geo,n_a,e_a):
-
+        # create the name of the nodes and edges
         ind=[re.findall(r'-?\d+\.?\d*', k) for k in geo.axes[0]]
         x_g={}
+        # loop to fill the x dictionary to create a graph
         for i in range(len(ind)):
             if(len(ind[i])>2 and int(ind[i][0])==int(ind[i][1]) and not (int(ind[i][0]),int(ind[i][1])) in x_g):
                 x_g[int(ind[i][0]),int(ind[i][1])]=[geo.loc[geo.axes[0][i+j]] for j in range(n_a)]
