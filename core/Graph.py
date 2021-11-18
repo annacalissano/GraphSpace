@@ -13,7 +13,7 @@ import networkx as nx
 # - Adj: dictionary showing the structure (every node is a key, the values are the adjency nodes to the key)
 # - x: dictionary showing the attributes
 #   x[i,i]: nodes attributes
-#   x[i,j]: edge attributes 
+#   x[i,j]: edge attributes
 # - y: scalar or category attribute of the Graph (seful for classification or regression)
 
 class Graph:
@@ -504,4 +504,4 @@ class Graph:
                 current_id = [(i, j) for j in adj_new[i] if j in id]
                 adj_new[i] = [n for n in adj_new[i] if n not in id]
                 for key in current_id: del x_new[key]
-        return Graph(x=x_new, adj=adj_new, y=self.s)
+        return Graph(x=x_new, adj=adj_new, s=self.s)
