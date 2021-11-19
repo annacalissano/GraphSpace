@@ -115,7 +115,7 @@ class Graph:
                             if (i != j and _l < self.edge_attr and _l == 1 and isinstance(self.x[i, j], list)): self.x[
                                 i, j] = self.x[i, j] + [0] * (self.edge_attr - _l)
                             if (i != j and _l < self.edge_attr and _l == 1 and not isinstance(self.x[i, j], list)):
-                            self.x[i, j] = [self.x[i, j]] + [0] * (self.edge_attr - _l)
+                                self.x[i, j] = [self.x[i, j]] + [0] * (self.edge_attr - _l)
                         # else:
                         #    if(i==j): self.x[i,j]=[0]*self.node_attr
                         #    else: self.x[i,j]=[0]*self.edge_attr

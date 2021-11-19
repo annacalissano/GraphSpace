@@ -24,7 +24,7 @@ class mean_aac(aligncompute):
         self.m_dis = None
         self.cov = None
 
-    def align_and_est(self, max_iterations=200):
+    def align_and_est(self, max_iterations=200, eps=0.001):
         # Select a Random Candidate:
         first_id = random.randint(0, self.aX.size() - 1)
         # first_id = 318
@@ -47,7 +47,7 @@ class mean_aac(aligncompute):
 
             step_range = self.matcher.dis(m_1, m_2)
 
-            if (step_range < 0.001):
+            if (step_range < eps):
                 self.mean = m_2
                 # Update aX with the final permutations:
                 Aligned = GraphSet()
