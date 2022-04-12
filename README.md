@@ -1,5 +1,8 @@
+Note: GraphSpace is moving into GeomStats python package! We apologize for possible usability issues within the transition process. Please check [geomstats](https://github.com/geomstats/geomstats) for an updated version!
+
 # GraphSpace
 Graph Space Package
+
 
 This python package allows to study populations of networks in the Graph Space geometric setting [1], as a special case of Structure Space introduced in [2].
 The package is organized as follow:
